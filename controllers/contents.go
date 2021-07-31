@@ -68,20 +68,8 @@ func CreateContent(c *gin.Context) {
 			return
 		}
 
-		// check if request contains file
-		form, _ := c.MultipartForm()
-		files := form.File["media"]
-		if len(files) > 0 {
-			// upload files to gcs
-			_, err := firebaseApp.Storage(context.Background())
-			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "There's a problem with upload service"})
-				return
-			}
-		}
-
-		appended := models.DB.Model(&user).Association("Contents").Append(&models.Content{Title: input.Title, Description: input.Description, MediaUrls: input.MediaUrls, YoutubeUrl: input.YoutubeUrl})
-		c.JSON(http.StatusOK, gin.H{"data": appended})
+		models.DB.Model(&user).Association("Contents").Append(&models.Content{Title: input.Title, Description: input.Description, MediaUrls: input.MediaUrls, YoutubeUrl: input.YoutubeUrl})
+		c.JSON(http.StatusOK, gin.H{"data": true})
 	} else {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Title must be unique"})
 		return

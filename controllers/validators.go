@@ -9,7 +9,7 @@ func ValidatePassword(pwd string) bool {
 	lowercaseValidator := regexp.MustCompile(`[a-z]`)
 	numberValidator := regexp.MustCompile(`[0-9]`)
 
-	return uppercaseValidator.MatchString(pwd) && lowercaseValidator.MatchString(pwd) && numberValidator.MatchString(pwd) && len(pwd) < 8
+	return uppercaseValidator.MatchString(pwd) && lowercaseValidator.MatchString(pwd) && numberValidator.MatchString(pwd) && len(pwd) > 8
 }
 
 func ValidateUsername(uname string) bool {
