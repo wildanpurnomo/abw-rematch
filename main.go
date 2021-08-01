@@ -1,11 +1,14 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"github.com/wildanpurnomo/abw-rematch/controllers"
 	"github.com/wildanpurnomo/abw-rematch/libs"
 	"github.com/wildanpurnomo/abw-rematch/models"
+	"github.com/wildanpurnomo/abw-rematch/repositories"
 )
 
 func main() {
@@ -16,8 +19,14 @@ func main() {
 	}
 	r := gin.Default()
 
-	models.ConnectDatabase()
-	controllers.ConnectFirebase()
+	dbConn, err := models.ConnectDatabase()
+	if err != nil {
+		fmt.Printf("error init DB: %v", err)
+	}
+
+	repositories.InitRepository(dbConn)
+
+	libs.ConnectFirebase()
 
 	r.Use(libs.CORSMiddleware())
 

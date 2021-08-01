@@ -11,6 +11,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
 	"github.com/wildanpurnomo/abw-rematch/models"
+	"github.com/wildanpurnomo/abw-rematch/repositories"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -134,10 +135,11 @@ func Register(c *gin.Context) {
 	// get profile picture
 	res, err := http.Get("https://randomuser.me/api/")
 	if err != nil {
-		fmt.Print(err)
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
-	defer res.Body.Close()
 
+	defer res.Body.Close()
 	var randomUserApiResponse models.RandomUserAPIResponse
 	if err := json.NewDecoder(res.Body).Decode(&randomUserApiResponse); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -145,11 +147,14 @@ func Register(c *gin.Context) {
 	}
 
 	// save to db
-	newUser := models.User{Username: input.Username, Password: string(hash), ProfilePicture: randomUserApiResponse.Results[0].ProfilePicture.Medium, Points: 0}
-	result := models.DB.Create(&newUser)
-
-	if result.Error != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": result.Error.Error()})
+	newUser := models.User{
+		Username:       input.Username,
+		Password:       string(hash),
+		ProfilePicture: randomUserApiResponse.Results[0].ProfilePicture.Medium,
+		Points:         0,
+	}
+	if err := repositories.Repo.CreateNewUser(&newUser); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 

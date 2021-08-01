@@ -10,7 +10,7 @@ import (
 
 var DB *gorm.DB
 
-func ConnectDatabase() {
+func ConnectDatabase() (dbConn *gorm.DB, err error) {
 	host := os.Getenv("POSTGRES_HOST")
 	user := os.Getenv("POSTGRES_USER")
 	password := os.Getenv("POSTGRES_PASSWORD")
@@ -22,9 +22,11 @@ func ConnectDatabase() {
 
 	conn, err := gorm.Open("postgres", dbUri)
 	if err != nil {
-		fmt.Printf("error init DB: %v", err)
+		return nil, err
 	}
 	conn.AutoMigrate(&User{}, &Content{})
 	conn.Model(&Content{}).AddForeignKey("user_id", "users(id)", "RESTRICT", "RESTRICT")
 	DB = conn
+
+	return conn, nil
 }
