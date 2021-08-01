@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/wildanpurnomo/abw-rematch/models"
+	"github.com/wildanpurnomo/abw-rematch/repositories"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -27,7 +28,7 @@ func UpdatePassword(c *gin.Context) {
 
 	// fetch user from DB
 	var user models.User
-	if err := models.DB.Where("id = ?", userId).First(&user).Error; err != nil {
+	if err := repositories.Repo.FetchUserById(&user, userId); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "User not found"})
 		return
 	}
@@ -54,9 +55,11 @@ func UpdatePassword(c *gin.Context) {
 	// update password
 	update := user
 	update.Password = string(hash)
-	models.DB.Model(&user).Updates(update)
-
-	c.JSON(http.StatusOK, gin.H{"data": true})
+	if err := repositories.Repo.UpdateUser(&user, update); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	} else {
+		c.JSON(http.StatusOK, gin.H{"data": true})
+	}
 }
 
 func UpdateUsername(c *gin.Context) {
@@ -86,14 +89,18 @@ func UpdateUsername(c *gin.Context) {
 
 	// fetch user from DB
 	var user models.User
-	if err := models.DB.Where("id = ?", userId).First(&user).Error; err != nil {
+	if err := repositories.Repo.FetchUserById(&user, userId); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "User not found"})
 		return
 	}
 
 	// update username
-	models.DB.Model(&user).Updates(input)
-
-	user.Password = ""
-	c.JSON(http.StatusOK, gin.H{"data": user})
+	update := user
+	update.Username = input.Username
+	if err := repositories.Repo.UpdateUser(&user, update); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	} else {
+		user.Password = ""
+		c.JSON(http.StatusOK, gin.H{"data": user})
+	}
 }

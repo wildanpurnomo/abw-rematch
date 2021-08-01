@@ -78,7 +78,7 @@ func Login(c *gin.Context) {
 	}
 
 	var user models.User
-	if err := models.DB.Where("username = ?", input.Username).First(&user).Error; err != nil {
+	if err := repositories.Repo.FetchUserByUsername(&user, input.Username); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid username or password"})
 		return
 	}

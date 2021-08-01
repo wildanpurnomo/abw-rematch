@@ -91,6 +91,7 @@ func TestSuccessfulRegister(t *testing.T) {
 	jsonString := w.Body.String()
 	assert.Equal(t, true, strings.Contains(jsonString, `"username":"test username"`))
 	assert.Equal(t, true, strings.Contains(jsonString, `"id":1`))
+	assert.Equal(t, true, strings.Contains(jsonString, `"profile_picture":"Testing"`))
 	assert.Equal(t, false, strings.Contains(jsonString, `"password"`))
 }
 

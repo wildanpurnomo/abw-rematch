@@ -8,8 +8,6 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
-var DB *gorm.DB
-
 func ConnectDatabase() (dbConn *gorm.DB, err error) {
 	host := os.Getenv("POSTGRES_HOST")
 	user := os.Getenv("POSTGRES_USER")
@@ -26,7 +24,6 @@ func ConnectDatabase() (dbConn *gorm.DB, err error) {
 	}
 	conn.AutoMigrate(&User{}, &Content{})
 	conn.Model(&Content{}).AddForeignKey("user_id", "users(id)", "RESTRICT", "RESTRICT")
-	DB = conn
 
 	return conn, nil
 }
