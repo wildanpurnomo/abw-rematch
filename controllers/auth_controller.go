@@ -63,6 +63,22 @@ func GenerateToken(userId uint) (string, bool) {
 	return token, true
 }
 
+func Authenticate(c *gin.Context) {
+	userId, status := VerifyJwt(c)
+	if !status {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": false})
+		return
+	}
+
+	var user models.User
+	if err := repositories.Repo.FetchUserById(&user, userId); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "User not found"})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": user})
+}
+
 func Logout(c *gin.Context) {
 	c.SetCookie("jwt", "", -1, "/", "", false, true)
 	c.JSON(http.StatusOK, gin.H{"data": true})
