@@ -2,11 +2,15 @@ package controllers
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
+	"os"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jinzhu/gorm"
+	"github.com/wildanpurnomo/abw-rematch/libs"
 	"github.com/wildanpurnomo/abw-rematch/models"
 	"github.com/wildanpurnomo/abw-rematch/repositories"
 )
@@ -28,7 +32,7 @@ func GetUserContents(c *gin.Context) {
 
 func CreateContent(c *gin.Context) {
 	var input models.CreateContentInput
-	if err := c.ShouldBindJSON(&input); err != nil {
+	if err := c.Bind(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
@@ -47,12 +51,42 @@ func CreateContent(c *gin.Context) {
 	var content models.Content
 	result := repositories.Repo.GetContentByUserIdAndTitle(&content, userId, input.Title)
 	if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-		user := models.User{ID: userId}
+		// create slug
+		var user models.User
+		if err := repositories.Repo.FetchUserById(&user, userId); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "User not found"})
+			return
+		}
+		input.Slug = fmt.Sprintf(
+			"%s-%s",
+			strings.ReplaceAll(user.Username, " ", "-"),
+			strings.ReplaceAll(input.Title, " ", "-"),
+		)
+
+		// begin process upload file if exists
+		form, err := c.MultipartForm()
+		if err == nil {
+			files := form.File["media"]
+			for index, file := range files {
+				if ValidateUploadFileType(file.Filename) {
+					bucketName := fmt.Sprintf("media-%d-%d", time.Now().Unix(), index)
+					if err := libs.UploadLib.BeginUpload(file, bucketName); err != nil {
+						c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+						return
+					}
+
+					publicUrl := fmt.Sprintf(os.Getenv("STORAGE_PUBLIC_URL"), bucketName)
+					input.MediaUrls = append(input.MediaUrls, publicUrl)
+				}
+			}
+		}
+
 		content := models.Content{
 			Title:       input.Title,
 			Description: input.Description,
 			MediaUrls:   input.MediaUrls,
 			YoutubeUrl:  input.YoutubeUrl,
+			Slug:        input.Slug,
 		}
 		if err := repositories.Repo.CreateNewContent(&user, content); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

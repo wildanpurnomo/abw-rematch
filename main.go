@@ -22,11 +22,18 @@ func main() {
 	dbConn, err := models.ConnectDatabase()
 	if err != nil {
 		fmt.Printf("error init DB: %v", err)
+		return
 	}
 
 	repositories.InitRepository(dbConn)
 
-	libs.ConnectFirebase()
+	firebaseApp, err := libs.ConnectFirebase()
+	if err != nil {
+		fmt.Printf("error init firebaseApp: %v", err)
+		return
+	}
+
+	libs.InitUploadLib(libs.UploadService{App: firebaseApp})
 
 	r.Use(libs.CORSMiddleware())
 

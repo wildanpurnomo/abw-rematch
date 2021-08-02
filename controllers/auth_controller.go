@@ -76,6 +76,7 @@ func Authenticate(c *gin.Context) {
 		return
 	}
 
+	user.Password = ""
 	c.JSON(http.StatusOK, gin.H{"data": user})
 }
 
