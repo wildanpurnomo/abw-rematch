@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -44,7 +45,7 @@ func CreateContent(c *gin.Context) {
 		return
 	}
 
-	// trim title and description
+	// trim title and body
 	input.Title = strings.TrimSpace(input.Title)
 	input.Body = strings.TrimSpace(input.Body)
 
@@ -93,5 +94,93 @@ func CreateContent(c *gin.Context) {
 	} else {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Title must be unique"})
 		return
+	}
+}
+
+func UpdateContent(c *gin.Context) {
+	// verify that input is valid form-data
+	var input models.CreateContentInput
+	if err := c.Bind(&input); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// verify jwt
+	userId, status := VerifyJwt(c)
+	if !status {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized client"})
+		return
+	}
+
+	// extract contentId from path param
+	contentId, err := strconv.ParseUint(c.Param("contentId"), 10, 32)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid contentId"})
+		return
+	}
+
+	// trim title and body
+	input.Title = strings.TrimSpace(input.Title)
+	input.Body = strings.TrimSpace(input.Body)
+
+	// check whether user is authorized to edit requested content
+	var content models.Content
+	if err := repositories.Repo.GetContentById(&models.Content{User}, uint(contentId)); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Content not found or unauthorized user"})
+		return
+	}
+
+	if input.Title != content.Title {
+		oldSlug := content.Slug
+		input.Slug = slug.Make(fmt.Sprintf("%s-%s", oldSlug[:10], input.Title))
+		result := repositories.Repo.GetContentByUserIdAndTitle(&models.Content{}, userId, input.Title)
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			if err := repositories.Repo.UpdateContent(
+				&content,
+				userId,
+				models.Content{
+					Title:      input.Title,
+					Body:       input.Body,
+					MediaUrls:  input.MediaUrls,
+					YoutubeUrl: input.YoutubeUrl,
+					Slug:       input.Slug,
+				},
+			); err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Content not found or unauthorized user"})
+				return
+			} else {
+				// create redirection record
+				_ = repositories.Repo.CreateNewRedirection(
+					&content,
+					models.Redirection{
+						Old: oldSlug,
+						New: content.Slug,
+					},
+				)
+
+				c.JSON(http.StatusOK, gin.H{"data": content})
+				return
+			}
+		} else {
+			c.JSON(http.StatusBadRequest, gin.H{"data": "Title must be unique"})
+			return
+		}
+	} else {
+		if err := repositories.Repo.UpdateContent(
+			&content,
+			userId,
+			models.Content{
+				Body:       input.Body,
+				MediaUrls:  input.MediaUrls,
+				YoutubeUrl: input.YoutubeUrl,
+				Slug:       input.Slug,
+			},
+		); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Content not found or unauthorized user"})
+			return
+		} else {
+			c.JSON(http.StatusOK, gin.H{"data": content})
+			return
+		}
 	}
 }

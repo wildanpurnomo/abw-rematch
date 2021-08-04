@@ -55,6 +55,7 @@ func main() {
 	{
 		contentRoutes.GET("/me", controllers.GetUserContents)
 		contentRoutes.POST("/create", controllers.CreateContent)
+		contentRoutes.PUT("/edit/:contentId", controllers.UpdateContent)
 	}
 
 	r.Run()

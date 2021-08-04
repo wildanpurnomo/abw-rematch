@@ -74,6 +74,7 @@ func ConnectFirebase() (*firebase.App, error) {
 	return app, nil
 }
 
+// can be called from unit test to mock the upload behavior
 func InitUploadLib(service FirebaseService) {
 	UploadLib = &FirebaseLib{firebaseService: service}
 }
