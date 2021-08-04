@@ -85,10 +85,12 @@ func TestRegister_ValidCase(t *testing.T) {
 	gock.New("https://randomuser.me/api").Get("/").Reply(200).JSON(mockRandomUserAPIResponse)
 
 	// mock insert SQL
-	const sqlInsert = `INSERT INTO "users" ("username","password","profile_picture","points","created_at","updated_at") VALUES ($1,$2,$3,$4,$5,$6) RETURNING "users"."id"`
+	const sqlInsert = `INSERT INTO "users" ("username","password","profile_picture","points","unique_code","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING "users"."id"`
 	mock.ExpectBegin()
 	mock.ExpectQuery(regexp.QuoteMeta(sqlInsert)).
 		WithArgs(
+			sqlmock.AnyArg(),
+			sqlmock.AnyArg(),
 			sqlmock.AnyArg(),
 			sqlmock.AnyArg(),
 			sqlmock.AnyArg(),
@@ -107,10 +109,7 @@ func TestRegister_ValidCase(t *testing.T) {
 		Username: "test username",
 		Password: "testPassword123",
 	}
-	jsonTest, err := json.Marshal(authInput)
-	if err != nil {
-		t.Fatalf("couldnt marshal json: %v", err)
-	}
+	jsonTest, _ := json.Marshal(authInput)
 
 	// begin test
 	req := httptest.NewRequest("POST", "/auth/register", bytes.NewBuffer(jsonTest))
@@ -123,9 +122,11 @@ func TestRegister_ValidCase(t *testing.T) {
 	// verify response body
 	jsonString := w.Body.String()
 	assert.Equal(t, true, strings.Contains(jsonString, `"username":"test username"`))
-	assert.Equal(t, true, strings.Contains(jsonString, `"id":1`))
 	assert.Equal(t, true, strings.Contains(jsonString, `"profile_picture":"Testing"`))
-	assert.Equal(t, false, strings.Contains(jsonString, `"password"`))
+	assert.Equal(t, true, strings.Contains(jsonString, `"points":0`))
+	assert.Equal(t, false, strings.Contains(jsonString, `"Password":`))
+	assert.Equal(t, false, strings.Contains(jsonString, `"UniqueCode":`))
+	assert.Equal(t, false, strings.Contains(jsonString, `"ID":`))
 }
 
 func TestRegister_InvalidPassword(t *testing.T) {
@@ -136,11 +137,7 @@ func TestRegister_InvalidPassword(t *testing.T) {
 		Username: "test username",
 		Password: "test",
 	}
-
-	jsonTest, err := json.Marshal(authInput)
-	if err != nil {
-		t.Fatalf("couldnt marshal json: %v", err)
-	}
+	jsonTest, _ := json.Marshal(authInput)
 
 	req := httptest.NewRequest("POST", "/auth/register", bytes.NewBuffer(jsonTest))
 	w := httptest.NewRecorder()
@@ -160,10 +157,7 @@ func TestRegister_InvalidUsername(t *testing.T) {
 		Password: "testPassword123",
 	}
 
-	jsonTest, err := json.Marshal(authInput)
-	if err != nil {
-		t.Fatalf("couldnt marshal json: %v", err)
-	}
+	jsonTest, _ := json.Marshal(authInput)
 
 	req := httptest.NewRequest("POST", "/auth/register", bytes.NewBuffer(jsonTest))
 	w := httptest.NewRecorder()

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/gosimple/slug"
 	"github.com/jinzhu/gorm"
 	"github.com/wildanpurnomo/abw-rematch/libs"
 	"github.com/wildanpurnomo/abw-rematch/models"
@@ -45,7 +46,7 @@ func CreateContent(c *gin.Context) {
 
 	// trim title and description
 	input.Title = strings.TrimSpace(input.Title)
-	input.Description = strings.TrimSpace(input.Description)
+	input.Body = strings.TrimSpace(input.Body)
 
 	// verify title is unique
 	var content models.Content
@@ -57,11 +58,7 @@ func CreateContent(c *gin.Context) {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "User not found"})
 			return
 		}
-		input.Slug = fmt.Sprintf(
-			"%s-%s",
-			strings.ReplaceAll(user.Username, " ", "-"),
-			strings.ReplaceAll(input.Title, " ", "-"),
-		)
+		input.Slug = slug.Make(fmt.Sprintf("%s %s", user.UniqueCode, input.Title))
 
 		// begin process upload file if exists
 		form, err := c.MultipartForm()
@@ -82,11 +79,11 @@ func CreateContent(c *gin.Context) {
 		}
 
 		content := models.Content{
-			Title:       input.Title,
-			Description: input.Description,
-			MediaUrls:   input.MediaUrls,
-			YoutubeUrl:  input.YoutubeUrl,
-			Slug:        input.Slug,
+			Title:      input.Title,
+			Body:       input.Body,
+			MediaUrls:  input.MediaUrls,
+			YoutubeUrl: input.YoutubeUrl,
+			Slug:       input.Slug,
 		}
 		if err := repositories.Repo.CreateNewContent(&user, content); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

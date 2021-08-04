@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt"
 	"github.com/wildanpurnomo/abw-rematch/models"
@@ -76,7 +77,6 @@ func Authenticate(c *gin.Context) {
 		return
 	}
 
-	user.Password = ""
 	c.JSON(http.StatusOK, gin.H{"data": user})
 }
 
@@ -113,7 +113,6 @@ func Login(c *gin.Context) {
 		return
 	}
 
-	user.Password = ""
 	c.SetCookie("jwt", token, 60*60*24, "/", "", false, true)
 	c.JSON(http.StatusOK, gin.H{"data": user})
 }
@@ -169,6 +168,7 @@ func Register(c *gin.Context) {
 		Password:       string(hash),
 		ProfilePicture: randomUserApiResponse.Results[0].ProfilePicture.Medium,
 		Points:         0,
+		UniqueCode:     uniuri.NewLen(10),
 	}
 	if err := repositories.Repo.CreateNewUser(&newUser); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -182,7 +182,6 @@ func Register(c *gin.Context) {
 		return
 	}
 
-	newUser.Password = ""
 	c.SetCookie("jwt", token, 60*60*24, "/", "", false, true)
 	c.JSON(http.StatusOK, gin.H{"data": newUser})
 }

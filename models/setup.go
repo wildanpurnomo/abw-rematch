@@ -22,8 +22,7 @@ func ConnectDatabase() (dbConn *gorm.DB, err error) {
 	if err != nil {
 		return nil, err
 	}
-	conn.AutoMigrate(&User{}, &Content{})
-	conn.Model(&Content{}).AddForeignKey("user_id", "users(id)", "RESTRICT", "RESTRICT")
+	conn.AutoMigrate(&User{}, &Content{}, &Redirection{})
 
 	return conn, nil
 }

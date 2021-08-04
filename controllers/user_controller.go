@@ -100,7 +100,6 @@ func UpdateUsername(c *gin.Context) {
 	if err := repositories.Repo.UpdateUser(&user, update); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 	} else {
-		user.Password = ""
 		c.JSON(http.StatusOK, gin.H{"data": user})
 	}
 }

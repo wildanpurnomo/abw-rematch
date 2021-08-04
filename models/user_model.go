@@ -7,14 +7,16 @@ import (
 )
 
 type User struct {
-	ID             uint   `json:"id" gorm:"primary_key"`
-	Username       string `json:"username" gorm:"unique"`
-	Password       string `json:"password,omitempty"`
-	ProfilePicture string `json:"profile_picture"`
-	Points         int    `json:"points"`
-	Contents       []Content
-	CreatedAt      time.Time `json:"created_at"`
-	UpdatedAt      time.Time `json:"updated_at"`
+	ID             uint      `json:"-" gorm:"primary_key"`
+	Username       string    `json:"username" gorm:"unique"`
+	Password       string    `json:"-"`
+	ProfilePicture string    `json:"profile_picture"`
+	Points         int       `json:"points"`
+	UniqueCode     string    `json:"-" gorm:"unique; not null; default:null"`
+	Contents       []Content `json:",omitempty"`
+	CreatedAt      time.Time
+	UpdatedAt      time.Time
+	DeletedAt      *time.Time `json:"-" sql:"index"`
 }
 
 type UserAuthInput struct {
