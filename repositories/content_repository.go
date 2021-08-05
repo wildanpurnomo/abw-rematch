@@ -13,6 +13,10 @@ func (p *Repository) GetContentByUserId(contents *[]models.Content, userId uint)
 	return p.db.Where("user_id = ?", userId).Find(&contents).Error
 }
 
+func (p *Repository) GetContentByUserIdAndContentId(content *models.Content, userId uint, contentId uint) error {
+	return p.db.Where("user_id = ? AND id = ?", userId, contentId).First(&content).Error
+}
+
 func (p *Repository) GetContentByUserIdAndTitle(content *models.Content, userId uint, title string) *gorm.DB {
 	return p.db.Where("user_id = ? AND title = ?", userId, title).First(&content)
 }

@@ -12,6 +12,7 @@ import (
 
 type FirebaseService interface {
 	UploadFile(*multipart.FileHeader, string) error
+	DeleteFile(string) error
 }
 
 type FirebaseLib struct {
@@ -26,11 +27,39 @@ func (f FirebaseLib) BeginUpload(fileHeader *multipart.FileHeader, bucketName st
 	return nil
 }
 
+func (f FirebaseLib) BeginDeleteFile(bucketName string) error {
+	if err := f.firebaseService.DeleteFile(bucketName); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 var UploadLib *FirebaseLib
 
 // Implementation of FirebaseService - UploadFile
 type UploadService struct {
 	App *firebase.App
+}
+
+func (u UploadService) DeleteFile(bucketName string) error {
+	ctx := context.Background()
+	storage, err := u.App.Storage(ctx)
+	if err != nil {
+		return err
+	}
+
+	bkt, err := storage.Bucket(os.Getenv("GCS_BUCKET_NAME"))
+	if err != nil {
+		return err
+	}
+
+	obj := bkt.Object(bucketName)
+	if err := obj.Delete(ctx); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (u UploadService) UploadFile(fileHeader *multipart.FileHeader, bucketName string) error {

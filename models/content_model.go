@@ -14,7 +14,7 @@ type Content struct {
 	MediaUrls    pq.StringArray `json:"media_urls" gorm:"type:text[]; default:null"`
 	YoutubeUrl   string         `json:"youtube_url" gorm:"default:null"`
 	Slug         string         `json:"slug" gorm:"unique; not null; default:null"`
-	Redirections []Redirection  `json:"-" gorm:"foreignKey: New; references: Slug; constraint: OnUpdate:CASCADE, OnDelete:CASCADE"`
+	Redirections []Redirection  `json:",omitempty" gorm:"foreignKey: New; references: Slug; constraint: OnUpdate:CASCADE, OnDelete:CASCADE"`
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 	DeletedAt    *time.Time `json:"-" sql:"index"`

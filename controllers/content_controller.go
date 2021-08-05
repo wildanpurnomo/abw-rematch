@@ -101,7 +101,7 @@ func UpdateContent(c *gin.Context) {
 	// verify that input is valid form-data
 	var input models.CreateContentInput
 	if err := c.Bind(&input); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request payload"})
 		return
 	}
 
@@ -125,62 +125,75 @@ func UpdateContent(c *gin.Context) {
 
 	// check whether user is authorized to edit requested content
 	var content models.Content
-	if err := repositories.Repo.GetContentById(&models.Content{User}, uint(contentId)); err != nil {
+	if err := repositories.Repo.GetContentByUserIdAndContentId(&content, userId, uint(contentId)); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Content not found or unauthorized user"})
 		return
 	}
 
-	if input.Title != content.Title {
-		oldSlug := content.Slug
-		input.Slug = slug.Make(fmt.Sprintf("%s-%s", oldSlug[:10], input.Title))
-		result := repositories.Repo.GetContentByUserIdAndTitle(&models.Content{}, userId, input.Title)
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
-			if err := repositories.Repo.UpdateContent(
-				&content,
-				userId,
-				models.Content{
-					Title:      input.Title,
-					Body:       input.Body,
-					MediaUrls:  input.MediaUrls,
-					YoutubeUrl: input.YoutubeUrl,
-					Slug:       input.Slug,
-				},
-			); err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": "Content not found or unauthorized user"})
-				return
-			} else {
-				// create redirection record
-				_ = repositories.Repo.CreateNewRedirection(
-					&content,
-					models.Redirection{
-						Old: oldSlug,
-						New: content.Slug,
-					},
-				)
-
-				c.JSON(http.StatusOK, gin.H{"data": content})
-				return
+	// check whether media payload is exist
+	form, err := c.MultipartForm()
+	if err == nil {
+		files := form.File["media"]
+		if len(files) > 0 {
+			// delete existing media
+			for _, fileUrl := range content.MediaUrls {
+				lastIndex := strings.Index(fileUrl, "?")
+				bktName := fileUrl[69:lastIndex]
+				libs.UploadLib.BeginDeleteFile(bktName)
 			}
+
+			// upload new media and assign new urls
+			for index, file := range files {
+				if ValidateUploadFileType(file.Filename) {
+					bucketName := fmt.Sprintf("media-%d-%d", time.Now().Unix(), index)
+					if err := libs.UploadLib.BeginUpload(file, bucketName); err != nil {
+						c.JSON(http.StatusBadRequest, gin.H{"error": "File processing failed"})
+						return
+					}
+
+					publicUrl := fmt.Sprintf(os.Getenv("STORAGE_PUBLIC_URL"), bucketName)
+					input.MediaUrls = append(input.MediaUrls, publicUrl)
+				}
+			}
+		}
+	}
+
+	// check whether title is changed
+	oldSlug := content.Slug
+	if input.Title != content.Title {
+		// check whether title is unique
+		contentResult := repositories.Repo.GetContentByUserIdAndTitle(&models.Content{}, userId, input.Title)
+		if errors.Is(contentResult.Error, gorm.ErrRecordNotFound) {
+			input.Slug = slug.Make(fmt.Sprintf("%s-%s", content.Slug[:10], input.Title))
 		} else {
-			c.JSON(http.StatusBadRequest, gin.H{"data": "Title must be unique"})
+			c.JSON(http.StatusBadRequest, gin.H{"data": "Invalid title"})
 			return
 		}
+	}
+
+	// execute update query
+	if err := repositories.Repo.UpdateContent(
+		&content,
+		models.Content{
+			Title:      input.Title,
+			Body:       input.Body,
+			MediaUrls:  input.MediaUrls,
+			YoutubeUrl: input.YoutubeUrl,
+			Slug:       input.Slug,
+		},
+	); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to update requested content"})
 	} else {
-		if err := repositories.Repo.UpdateContent(
-			&content,
-			userId,
-			models.Content{
-				Body:       input.Body,
-				MediaUrls:  input.MediaUrls,
-				YoutubeUrl: input.YoutubeUrl,
-				Slug:       input.Slug,
-			},
-		); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Content not found or unauthorized user"})
-			return
-		} else {
-			c.JSON(http.StatusOK, gin.H{"data": content})
-			return
+		// create new redirection record
+		if oldSlug != content.Slug {
+			repositories.Repo.CreateNewRedirection(
+				&models.Redirection{
+					Old: oldSlug,
+					New: input.Slug,
+				},
+			)
 		}
+
+		c.JSON(http.StatusOK, gin.H{"data": content})
 	}
 }
