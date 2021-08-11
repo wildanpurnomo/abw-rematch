@@ -2,74 +2,19 @@ package controllers
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
-	"os"
 	"strings"
-	"time"
 
 	"github.com/dchest/uniuri"
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt"
+	"github.com/wildanpurnomo/abw-rematch/libs"
 	"github.com/wildanpurnomo/abw-rematch/models"
 	"github.com/wildanpurnomo/abw-rematch/repositories"
 	"golang.org/x/crypto/bcrypt"
 )
 
-var jwtSecret = []byte(os.Getenv("JWT_SECRET"))
-
-func VerifyPassword(hashed []byte, plain []byte) bool {
-	if err := bcrypt.CompareHashAndPassword(hashed, plain); err != nil {
-		return false
-	}
-
-	return true
-}
-
-func VerifyJwt(c *gin.Context) (uint, bool) {
-	cookie, err := c.Request.Cookie("jwt")
-	if err != nil {
-		return 0, false
-	}
-
-	cookieValue := cookie.Value
-	claims := &models.JwtClaims{}
-
-	token, err := jwt.ParseWithClaims(cookieValue, claims, func(t *jwt.Token) (interface{}, error) {
-		return jwtSecret, nil
-	})
-	if err != nil || !token.Valid {
-		if err != nil {
-			fmt.Print(err)
-		}
-		return 0, false
-	}
-
-	return claims.UserID, true
-}
-
-func GenerateToken(userId uint) (string, bool) {
-	claims := &models.JwtClaims{
-		UserID: userId,
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
-		},
-	}
-	sign := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	token, err := sign.SignedString(jwtSecret)
-	if err != nil {
-		return "", false
-	}
-
-	return token, true
-}
-
 func Authenticate(c *gin.Context) {
-	userId, status := VerifyJwt(c)
-	if !status {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": false})
-		return
-	}
+	userId := c.GetString(libs.AuthContextKey)
 
 	var user models.User
 	if err := repositories.Repo.FetchUserById(&user, userId); err != nil {
@@ -101,13 +46,13 @@ func Login(c *gin.Context) {
 	}
 
 	// verify password
-	if !VerifyPassword([]byte(user.Password), []byte(input.Password)) {
+	if !libs.VerifyPassword([]byte(user.Password), []byte(input.Password)) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid username or password"})
 		return
 	}
 
 	// invoke token
-	token, status := GenerateToken(user.ID)
+	token, status := libs.GenerateToken(user.ID)
 	if !status {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid username or password"})
 		return
@@ -176,7 +121,7 @@ func Register(c *gin.Context) {
 	}
 
 	// invoke token
-	token, status := GenerateToken(newUser.ID)
+	token, status := libs.GenerateToken(newUser.ID)
 	if !status {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid username or password"})
 		return

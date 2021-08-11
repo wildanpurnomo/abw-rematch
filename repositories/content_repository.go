@@ -13,15 +13,15 @@ func (p *Repository) GetContentBySlug(content *models.Content, slug string) erro
 	return p.db.Where("slug = ?", slug).First(&content).Error
 }
 
-func (p *Repository) GetContentByUserId(contents *[]models.Content, userId uint) error {
+func (p *Repository) GetContentByUserId(contents *[]models.Content, userId string) error {
 	return p.db.Where("user_id = ?", userId).Find(&contents).Error
 }
 
-func (p *Repository) GetContentByUserIdAndContentId(content *models.Content, userId uint, contentId uint) error {
+func (p *Repository) GetContentByUserIdAndContentId(content *models.Content, userId string, contentId uint) error {
 	return p.db.Where("user_id = ? AND id = ?", userId, contentId).First(&content).Error
 }
 
-func (p *Repository) GetContentByUserIdAndTitle(content *models.Content, userId uint, title string) *gorm.DB {
+func (p *Repository) GetContentByUserIdAndTitle(content *models.Content, userId string, title string) *gorm.DB {
 	return p.db.Where("user_id = ? AND title = ?", userId, title).First(&content)
 }
 

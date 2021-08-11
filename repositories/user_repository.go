@@ -6,7 +6,7 @@ func (p *Repository) CreateNewUser(user *models.User) error {
 	return p.db.Create(&user).Error
 }
 
-func (p *Repository) FetchUserById(user *models.User, id uint) error {
+func (p *Repository) FetchUserById(user *models.User, id string) error {
 	return p.db.Where("id = ?", id).First(&user).Error
 }
 

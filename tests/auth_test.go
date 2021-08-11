@@ -22,10 +22,10 @@ import (
 func TestLogin_NoJSONPayload(t *testing.T) {
 	// init gin
 	r := libs.InitGinForTesting()
-	r.POST("/auth/login", controllers.Login)
+	r.POST("/api/auth/login", controllers.Login)
 
 	// begin test
-	req := httptest.NewRequest("POST", "/auth/login", nil) // no json payload
+	req := httptest.NewRequest("POST", "/api/auth/login", nil) // no json payload
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
@@ -39,10 +39,10 @@ func TestLogin_NoJSONPayload(t *testing.T) {
 func TestRegister_NoJSONPayload(t *testing.T) {
 	// init gin
 	r := libs.InitGinForTesting()
-	r.POST("/auth/register", controllers.Register)
+	r.POST("/api/auth/register", controllers.Register)
 
 	// begin test
-	req := httptest.NewRequest("POST", "/auth/register", nil) // no json payload
+	req := httptest.NewRequest("POST", "/api/auth/register", nil) // no json payload
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
@@ -56,7 +56,7 @@ func TestRegister_NoJSONPayload(t *testing.T) {
 func TestRegister_ValidCase(t *testing.T) {
 	// Init gin
 	r := libs.InitGinForTesting()
-	r.POST("/auth/register", controllers.Register)
+	r.POST("/api/auth/register", controllers.Register)
 
 	// init sqlmock
 	sqlMockDb, mock, err := sqlmock.New()
@@ -112,7 +112,7 @@ func TestRegister_ValidCase(t *testing.T) {
 	jsonTest, _ := json.Marshal(authInput)
 
 	// begin test
-	req := httptest.NewRequest("POST", "/auth/register", bytes.NewBuffer(jsonTest))
+	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewBuffer(jsonTest))
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
@@ -131,7 +131,7 @@ func TestRegister_ValidCase(t *testing.T) {
 
 func TestRegister_InvalidPassword(t *testing.T) {
 	r := libs.InitGinForTesting()
-	r.POST("/auth/register", controllers.Register)
+	r.POST("/api/auth/register", controllers.Register)
 
 	authInput := models.UserAuthInput{
 		Username: "test username",
@@ -139,7 +139,7 @@ func TestRegister_InvalidPassword(t *testing.T) {
 	}
 	jsonTest, _ := json.Marshal(authInput)
 
-	req := httptest.NewRequest("POST", "/auth/register", bytes.NewBuffer(jsonTest))
+	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewBuffer(jsonTest))
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
@@ -150,7 +150,7 @@ func TestRegister_InvalidPassword(t *testing.T) {
 
 func TestRegister_InvalidUsername(t *testing.T) {
 	r := libs.InitGinForTesting()
-	r.POST("/auth/register", controllers.Register)
+	r.POST("/api/auth/register", controllers.Register)
 
 	authInput := models.UserAuthInput{
 		Username: "test",
@@ -159,7 +159,7 @@ func TestRegister_InvalidUsername(t *testing.T) {
 
 	jsonTest, _ := json.Marshal(authInput)
 
-	req := httptest.NewRequest("POST", "/auth/register", bytes.NewBuffer(jsonTest))
+	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewBuffer(jsonTest))
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 

@@ -18,12 +18,7 @@ import (
 )
 
 func GetUserContents(c *gin.Context) {
-	userId, status := VerifyJwt(c)
-	if !status {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized client"})
-		return
-	}
-
+	userId := c.GetString(libs.AuthContextKey)
 	var contents []models.Content
 	if err := repositories.Repo.GetContentByUserId(&contents, userId); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -61,11 +56,7 @@ func CreateContent(c *gin.Context) {
 		return
 	}
 
-	userId, status := VerifyJwt(c)
-	if !status {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized client"})
-		return
-	}
+	userId := c.GetString(libs.AuthContextKey)
 
 	// trim title and body
 	input.Title = strings.TrimSpace(input.Title)
@@ -127,12 +118,7 @@ func UpdateContent(c *gin.Context) {
 		return
 	}
 
-	// verify jwt
-	userId, status := VerifyJwt(c)
-	if !status {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized client"})
-		return
-	}
+	userId := c.GetString(libs.AuthContextKey)
 
 	// extract contentId from path param
 	contentId, err := strconv.ParseUint(c.Param("contentId"), 10, 32)

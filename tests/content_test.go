@@ -18,16 +18,20 @@ import (
 	"github.com/wildanpurnomo/abw-rematch/repositories"
 )
 
+var (
+	createContentEndpoint = "/api/content/create"
+)
+
 func TestCreateContent_NoJwt(t *testing.T) {
 	// init gin for testing
 	r := libs.InitGinForTesting()
-	r.POST("/content/create", controllers.CreateContent)
+	r.POST(createContentEndpoint, controllers.CreateContent)
 
 	// begin test
 	form := url.Values{}
 	form.Add("title", "testing")
 	form.Add("body", "testing")
-	req := httptest.NewRequest(http.MethodPost, "/content/create", strings.NewReader(form.Encode()))
+	req := httptest.NewRequest(http.MethodPost, createContentEndpoint, strings.NewReader(form.Encode()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	w := httptest.NewRecorder()
 
@@ -44,10 +48,15 @@ func TestCreateContent_NoJwt(t *testing.T) {
 func TestCreateContent_NoRequestPayload(t *testing.T) {
 	// init gin for testing
 	r := libs.InitGinForTesting()
-	r.POST("/content/create", controllers.CreateContent)
+	r.POST(createContentEndpoint, controllers.CreateContent)
 
 	// begin test
-	req := httptest.NewRequest("POST", "/content/create", nil)
+	token, _ := libs.GenerateToken(1)
+	req := httptest.NewRequest("POST", createContentEndpoint, nil)
+	req.AddCookie(&http.Cookie{
+		Name:  "jwt",
+		Value: token,
+	})
 	w := httptest.NewRecorder()
 
 	r.ServeHTTP(w, req)
@@ -63,7 +72,7 @@ func TestCreateContent_NoRequestPayload(t *testing.T) {
 func TestCreateContent_TitleNotUnique(t *testing.T) {
 	// init gin for testing
 	r := libs.InitGinForTesting()
-	r.POST("/content/create", controllers.CreateContent)
+	r.POST(createContentEndpoint, controllers.CreateContent)
 
 	// init sql mock
 	sqlMockDb, mock, _ := sqlmock.New()
@@ -90,8 +99,8 @@ func TestCreateContent_TitleNotUnique(t *testing.T) {
 	form.Add("body", "testing")
 
 	// begin test
-	token, _ := controllers.GenerateToken(1)
-	req := httptest.NewRequest(http.MethodPost, "/content/create", strings.NewReader(form.Encode()))
+	token, _ := libs.GenerateToken(1)
+	req := httptest.NewRequest(http.MethodPost, createContentEndpoint, strings.NewReader(form.Encode()))
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	req.AddCookie(&http.Cookie{
 		Name:  "jwt",
@@ -112,12 +121,10 @@ func TestCreateContent_TitleNotUnique(t *testing.T) {
 func TestCreateContent_FailedUpload(t *testing.T) {
 	mockUploadSvc := new(libs.MockObject)
 	mockUploadSvc.On("UploadFile", mock.Anything, mock.Anything).Return(errors.New("testing error upload"))
-	libs.InitUploadLib(mockUploadSvc)
 }
 
 // TODO @wildanpurnomo
 func TestCreateContent_SuccessfulProcess(t *testing.T) {
 	mockUploadSvc := new(libs.MockObject)
 	mockUploadSvc.On("UploadFile", mock.Anything, mock.Anything).Return(nil)
-	libs.InitUploadLib(mockUploadSvc)
 }

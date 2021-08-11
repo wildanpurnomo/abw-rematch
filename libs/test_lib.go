@@ -17,5 +17,7 @@ func (s *MockObject) UploadFile(fileHeader *multipart.FileHeader, bucketName str
 
 func InitGinForTesting() *gin.Engine {
 	gin.SetMode(gin.TestMode)
-	return gin.Default()
+	router := gin.Default()
+	router.Use(AuthMiddleware())
+	return router
 }

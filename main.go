@@ -36,6 +36,7 @@ func main() {
 	libs.InitUploadLib(libs.UploadService{App: firebaseApp})
 
 	r.Use(libs.CORSMiddleware())
+	r.Use(libs.AuthMiddleware())
 
 	authRoutes := r.Group("api/auth")
 	{

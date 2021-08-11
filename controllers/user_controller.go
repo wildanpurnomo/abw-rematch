@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/wildanpurnomo/abw-rematch/libs"
 	"github.com/wildanpurnomo/abw-rematch/models"
 	"github.com/wildanpurnomo/abw-rematch/repositories"
 	"golang.org/x/crypto/bcrypt"
@@ -20,11 +21,7 @@ func UpdatePassword(c *gin.Context) {
 	}
 
 	// jwt validation
-	userId, status := VerifyJwt(c)
-	if !status {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized client"})
-		return
-	}
+	userId := c.GetString(libs.AuthContextKey)
 
 	// fetch user from DB
 	var user models.User
@@ -34,7 +31,7 @@ func UpdatePassword(c *gin.Context) {
 	}
 
 	// verify password
-	if !VerifyPassword([]byte(user.Password), []byte(input.OldPassword)) {
+	if !libs.VerifyPassword([]byte(user.Password), []byte(input.OldPassword)) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid old password or new password"})
 		return
 	}
@@ -72,11 +69,7 @@ func UpdateUsername(c *gin.Context) {
 	}
 
 	// jwt validation
-	userId, status := VerifyJwt(c)
-	if !status {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized client"})
-		return
-	}
+	userId := c.GetString(libs.AuthContextKey)
 
 	// trim username
 	input.Username = strings.TrimSpace(input.Username)
