@@ -75,13 +75,13 @@ func Register(c *gin.Context) {
 	input.Username = strings.TrimSpace(input.Username)
 
 	// username validation
-	if !ValidateUsername(input.Username) {
+	if !libs.ValidateUsername(input.Username) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Username must be at least 8 characters long"})
 		return
 	}
 
 	// password validation
-	if !ValidatePassword(input.Password) {
+	if !libs.ValidatePassword(input.Password) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Password must be at least 8 characters long, contains min 1 uppercase, min 1 lowercase and 1 number"})
 		return
 	}

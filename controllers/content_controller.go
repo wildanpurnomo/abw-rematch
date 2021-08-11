@@ -79,7 +79,7 @@ func CreateContent(c *gin.Context) {
 		if err == nil {
 			files := form.File["media"]
 			for index, file := range files {
-				if ValidateUploadFileType(file.Filename) {
+				if libs.ValidateUploadFileType(file.Filename) {
 					bucketName := fmt.Sprintf("media-%d-%d", time.Now().Unix(), index)
 					if err := libs.UploadLib.BeginUpload(file, bucketName); err != nil {
 						c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -152,7 +152,7 @@ func UpdateContent(c *gin.Context) {
 
 			// upload new media and assign new urls
 			for index, file := range files {
-				if ValidateUploadFileType(file.Filename) {
+				if libs.ValidateUploadFileType(file.Filename) {
 					bucketName := fmt.Sprintf("media-%d-%d", time.Now().Unix(), index)
 					if err := libs.UploadLib.BeginUpload(file, bucketName); err != nil {
 						c.JSON(http.StatusBadRequest, gin.H{"error": "File processing failed"})
