@@ -1,20 +1,20 @@
 version: "3.8"
 
 services: 
-    abw-rematch-be:
-        container_name: abw-rematch-be
+    abw_rematch_be:
+        container_name: abw_rematch_be
         build: .
         ports:
             - 8080:8080
         restart: on-failure
         depends_on: 
-            - pg
+            - abw_rematch_db_pg
         networks:
-            - abw-rematch-net
+            - abw_rematch_net
     
-    abw-rematch-db-pg:
+    abw_rematch_db_pg:
         image: postgres:latest
-        container_name: abw-rematch-db-pg
+        container_name: abw_rematch_db_pg
         environment:
             - POSTGRES_USER=${POSTGRES_USER}
             - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
@@ -28,11 +28,11 @@ services:
         volumes:
             - database_postgres:/var/lib/postgresql/data
         networks:
-            - abw-rematch-net
+            - abw_rematch_net
     
 volumes:
     database_postgres:
 
 networks:
-    abw-rematch-net:
+    abw_rematch_net:
         driver: bridge
