@@ -37,7 +37,7 @@ func main() {
 
 	r.Use(libs.CORSMiddleware())
 
-	authRoutes := r.Group("auth")
+	authRoutes := r.Group("api/auth")
 	{
 		authRoutes.GET("/authenticate", controllers.Authenticate)
 		authRoutes.POST("/register", controllers.Register)
@@ -45,15 +45,16 @@ func main() {
 		authRoutes.POST("/logout", controllers.Logout)
 	}
 
-	userRoutes := r.Group("user")
+	userRoutes := r.Group("api/user")
 	{
 		userRoutes.PUT("/update-username", controllers.UpdateUsername)
 		userRoutes.PUT("/update-password", controllers.UpdatePassword)
 	}
 
-	contentRoutes := r.Group("content")
+	contentRoutes := r.Group("api/content")
 	{
 		contentRoutes.GET("/me", controllers.GetUserContents)
+		contentRoutes.GET("/browse/:slug", controllers.GetContentBySlug)
 		contentRoutes.POST("/create", controllers.CreateContent)
 		contentRoutes.PUT("/edit/:contentId", controllers.UpdateContent)
 	}

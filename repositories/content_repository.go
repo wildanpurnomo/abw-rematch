@@ -9,6 +9,10 @@ func (p *Repository) GetContentById(content *models.Content, contentId uint) err
 	return p.db.Where("id = ?", contentId).First(&content).Error
 }
 
+func (p *Repository) GetContentBySlug(content *models.Content, slug string) error {
+	return p.db.Where("slug = ?", slug).First(&content).Error
+}
+
 func (p *Repository) GetContentByUserId(contents *[]models.Content, userId uint) error {
 	return p.db.Where("user_id = ?", userId).Find(&contents).Error
 }
@@ -21,8 +25,8 @@ func (p *Repository) GetContentByUserIdAndTitle(content *models.Content, userId 
 	return p.db.Where("user_id = ? AND title = ?", userId, title).First(&content)
 }
 
-func (p *Repository) CreateNewContent(user *models.User, content models.Content) error {
-	return p.db.Model(&user).Association("Contents").Append(&content).Error
+func (p *Repository) CreateNewContent(content *models.Content) error {
+	return p.db.Create(&content).Error
 }
 
 func (p *Repository) UpdateContent(content *models.Content, update models.Content) error {

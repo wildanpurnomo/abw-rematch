@@ -32,6 +32,28 @@ func GetUserContents(c *gin.Context) {
 	}
 }
 
+func GetContentBySlug(c *gin.Context) {
+	// extract slug
+	slug := c.Param("slug")
+
+	// search in content table
+	var content models.Content
+	err := repositories.Repo.GetContentBySlug(&content, slug)
+
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		// search in redirection table
+		newSlug := repositories.Repo.GetNewRedirection(slug)
+		if len(newSlug) == 0 {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Content not found"})
+		} else {
+			redirectionUrl := fmt.Sprintf("http://localhost:8080/api/content/browse/%v", newSlug)
+			c.Redirect(http.StatusFound, redirectionUrl)
+		}
+	} else {
+		c.JSON(http.StatusOK, gin.H{"data": content})
+	}
+}
+
 func CreateContent(c *gin.Context) {
 	var input models.CreateContentInput
 	if err := c.Bind(&input); err != nil {
@@ -80,20 +102,20 @@ func CreateContent(c *gin.Context) {
 		}
 
 		content := models.Content{
+			UserID:     user.ID,
 			Title:      input.Title,
 			Body:       input.Body,
 			MediaUrls:  input.MediaUrls,
 			YoutubeUrl: input.YoutubeUrl,
 			Slug:       input.Slug,
 		}
-		if err := repositories.Repo.CreateNewContent(&user, content); err != nil {
+		if err := repositories.Repo.CreateNewContent(&content); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		} else {
 			c.JSON(http.StatusOK, gin.H{"data": content})
 		}
 	} else {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Title must be unique"})
-		return
 	}
 }
 
@@ -138,7 +160,7 @@ func UpdateContent(c *gin.Context) {
 			// delete existing media
 			for _, fileUrl := range content.MediaUrls {
 				lastIndex := strings.Index(fileUrl, "?")
-				bktName := fileUrl[69:lastIndex]
+				bktName := fileUrl[70:lastIndex]
 				libs.UploadLib.BeginDeleteFile(bktName)
 			}
 
