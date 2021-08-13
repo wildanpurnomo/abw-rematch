@@ -1,8 +1,6 @@
 package tests
 
 import (
-	"bytes"
-	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -12,51 +10,14 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/go-playground/assert/v2"
 	"github.com/jinzhu/gorm"
-	"github.com/wildanpurnomo/abw-rematch/controllers"
-	"github.com/wildanpurnomo/abw-rematch/libs"
 	"github.com/wildanpurnomo/abw-rematch/models"
 	"github.com/wildanpurnomo/abw-rematch/repositories"
 	"gopkg.in/h2non/gock.v1"
 )
 
-func TestLogin_NoJSONPayload(t *testing.T) {
-	// init gin
-	r := libs.InitGinForTesting()
-	r.POST("/api/auth/login", controllers.Login)
-
-	// begin test
-	req := httptest.NewRequest("POST", "/api/auth/login", nil) // no json payload
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-
-	// assert status code
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-
-	// assert response body
-	assert.Equal(t, true, strings.Contains(w.Body.String(), `"error":"Invalid username or password"`))
-}
-
-func TestRegister_NoJSONPayload(t *testing.T) {
-	// init gin
-	r := libs.InitGinForTesting()
-	r.POST("/api/auth/register", controllers.Register)
-
-	// begin test
-	req := httptest.NewRequest("POST", "/api/auth/register", nil) // no json payload
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
-
-	// assert status code
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-
-	// assert response body
-	assert.Equal(t, true, strings.Contains(w.Body.String(), `"error":"EOF"`))
-}
-
 func TestRegister_ValidCase(t *testing.T) {
 	// Init gin
-	r := libs.InitGinForTesting()
-	r.POST("/api/auth/register", controllers.Register)
+	r := InitGQLServerTesting()
 
 	// init sqlmock
 	sqlMockDb, mock, err := sqlmock.New()
@@ -73,7 +34,6 @@ func TestRegister_ValidCase(t *testing.T) {
 
 	// init gock to mock randomUserApi call
 	defer gock.Off()
-
 	mockResults := []models.RandomUser{
 		{
 			ProfilePicture: models.ProfilePicture{Medium: "Testing"},
@@ -104,15 +64,12 @@ func TestRegister_ValidCase(t *testing.T) {
 	// assign mock sql db to repository
 	repositories.InitRepository(gormDb)
 
-	// create POST payload
-	authInput := models.UserAuthInput{
-		Username: "test username",
-		Password: "testPassword123",
-	}
-	jsonTest, _ := json.Marshal(authInput)
-
 	// begin test
-	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewBuffer(jsonTest))
+	req := httptest.NewRequest(
+		http.MethodPost,
+		`/api/gql?query=mutation+_{register(username:"test%20username",password:"testPasssword123"){username,profile_picture,points}}`,
+		nil,
+	)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
@@ -121,49 +78,41 @@ func TestRegister_ValidCase(t *testing.T) {
 
 	// verify response body
 	jsonString := w.Body.String()
-	assert.Equal(t, true, strings.Contains(jsonString, `"username":"test username"`))
-	assert.Equal(t, true, strings.Contains(jsonString, `"profile_picture":"Testing"`))
-	assert.Equal(t, true, strings.Contains(jsonString, `"points":0`))
-	assert.Equal(t, false, strings.Contains(jsonString, `"Password":`))
-	assert.Equal(t, false, strings.Contains(jsonString, `"UniqueCode":`))
-	assert.Equal(t, false, strings.Contains(jsonString, `"ID":`))
+	assert.Equal(t, true, strings.Contains(jsonString, `"username": "test username"`))
+	assert.Equal(t, true, strings.Contains(jsonString, `"profile_picture": "Testing"`))
+	assert.Equal(t, true, strings.Contains(jsonString, `"points": 0`))
 }
 
 func TestRegister_InvalidPassword(t *testing.T) {
-	r := libs.InitGinForTesting()
-	r.POST("/api/auth/register", controllers.Register)
+	r := InitGQLServerTesting()
 
-	authInput := models.UserAuthInput{
-		Username: "test username",
-		Password: "test",
-	}
-	jsonTest, _ := json.Marshal(authInput)
-
-	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewBuffer(jsonTest))
+	req := httptest.NewRequest(
+		http.MethodPost,
+		`/api/gql?query=mutation+_{register(username:"test%20username",password:"test"){username,profile_picture,points}}`,
+		nil,
+	)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
 	jsonString := w.Body.String()
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Equal(t, true, strings.Contains(jsonString, `"error":"Password must be at least 8 characters long, contains min 1 uppercase, min 1 lowercase and 1 number"`))
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, true, strings.Contains(jsonString, `"errors":`))
+	assert.Equal(t, true, strings.Contains(jsonString, `"message": "Invalid username or password"`))
 }
 
 func TestRegister_InvalidUsername(t *testing.T) {
-	r := libs.InitGinForTesting()
-	r.POST("/api/auth/register", controllers.Register)
+	r := InitGQLServerTesting()
 
-	authInput := models.UserAuthInput{
-		Username: "test",
-		Password: "testPassword123",
-	}
-
-	jsonTest, _ := json.Marshal(authInput)
-
-	req := httptest.NewRequest("POST", "/api/auth/register", bytes.NewBuffer(jsonTest))
+	req := httptest.NewRequest(
+		http.MethodPost,
+		`/api/gql?query=mutation+_{register(username:"test",password:"testPasssword123"){username,profile_picture,points}}`,
+		nil,
+	)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
 	jsonString := w.Body.String()
-	assert.Equal(t, http.StatusBadRequest, w.Code)
-	assert.Equal(t, true, strings.Contains(jsonString, `"error":"Username must be at least 8 characters long"`))
+	assert.Equal(t, http.StatusOK, w.Code)
+	assert.Equal(t, true, strings.Contains(jsonString, `"errors":`))
+	assert.Equal(t, true, strings.Contains(jsonString, `"message": "Invalid username or password"`))
 }

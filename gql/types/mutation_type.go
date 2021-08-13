@@ -32,7 +32,7 @@ var MutationType = graphql.NewObject(
 			},
 			"logout": &graphql.Field{
 				Type:        graphql.Boolean,
-				Description: "Log out to system and clear the jwt cookie",
+				Description: "Log out to system",
 				Resolve:     gqlresolvers.LogoutResolver,
 			},
 		},
