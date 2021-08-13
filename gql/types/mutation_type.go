@@ -35,6 +35,16 @@ var MutationType = graphql.NewObject(
 				Description: "Log out to system",
 				Resolve:     gqlresolvers.LogoutResolver,
 			},
+			"update_username": &graphql.Field{
+				Type:        UserType,
+				Description: "Update requesting user's username",
+				Args: graphql.FieldConfigArgument{
+					"username": &graphql.ArgumentConfig{
+						Type: graphql.NewNonNull(graphql.String),
+					},
+				},
+				Resolve: gqlresolvers.UpdateUsernameResolver,
+			},
 		},
 	},
 )

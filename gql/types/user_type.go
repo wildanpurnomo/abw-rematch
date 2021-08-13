@@ -15,6 +15,11 @@ var UserType = graphql.NewObject(
 			"points": &graphql.Field{
 				Type: graphql.Int,
 			},
+			"contents": &graphql.Field{
+				Type: &graphql.List{
+					OfType: ContentType,
+				},
+			},
 		},
 	},
 )
