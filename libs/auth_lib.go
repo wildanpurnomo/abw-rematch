@@ -1,6 +1,7 @@
 package libs
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"os"
@@ -13,15 +14,29 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+type CookieAccess struct {
+	GinContext *gin.Context
+}
+
 var (
-	AuthContextKey  = "auth"
-	JwtSecret       = []byte(os.Getenv("JWT_SECRET"))
-	PublicEndpoints = []string{
+	AuthContextKey         = "auth"
+	CookieSetterContextKey = "cookie-setter"
+	JwtSecret              = []byte(os.Getenv("JWT_SECRET"))
+	PublicEndpoints        = []string{
 		"api/auth/login",
 		"api/auth/register",
 		"api/content/browse/",
+		"api/gql",
 	}
 )
+
+func (c *CookieAccess) SetJwtToken(token string) {
+	c.GinContext.SetCookie("jwt", token, 60*60*24, "/", "", false, true)
+}
+
+func GetCookieSetter(ctx context.Context) *CookieAccess {
+	return ctx.Value(CookieSetterContextKey).(*CookieAccess)
+}
 
 func VerifyPassword(hashed []byte, plain []byte) bool {
 	if err := bcrypt.CompareHashAndPassword(hashed, plain); err != nil {
@@ -81,6 +96,16 @@ func AuthMiddleware() gin.HandlerFunc {
 
 			c.Set(AuthContextKey, fmt.Sprint(userId))
 		}
+
+		c.Request = c.Request.WithContext(
+			context.WithValue(
+				context.Background(),
+				CookieSetterContextKey,
+				&CookieAccess{
+					GinContext: c,
+				},
+			),
+		)
 		c.Next()
 	}
 }

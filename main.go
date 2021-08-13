@@ -2,10 +2,13 @@ package main
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/gin-gonic/gin"
+	"github.com/graphql-go/handler"
 	"github.com/joho/godotenv"
 	"github.com/wildanpurnomo/abw-rematch/controllers"
+	gqlschema "github.com/wildanpurnomo/abw-rematch/gql/schema"
 	"github.com/wildanpurnomo/abw-rematch/libs"
 	"github.com/wildanpurnomo/abw-rematch/models"
 	"github.com/wildanpurnomo/abw-rematch/repositories"
@@ -37,6 +40,25 @@ func main() {
 
 	r.Use(libs.CORSMiddleware())
 	r.Use(libs.AuthMiddleware())
+
+	graphqlSchema, err := gqlschema.InitSchema()
+	if err != nil {
+		log.Fatal(err)
+	}
+	gqlHandler := handler.New(&handler.Config{
+		Schema:   &graphqlSchema,
+		Pretty:   true,
+		GraphiQL: true,
+	})
+	gqlHandlerFunc := gin.HandlerFunc(func(c *gin.Context) {
+		gqlHandler.ServeHTTP(c.Writer, c.Request)
+	})
+
+	gqlRoutes := r.Group("/api")
+	{
+		gqlRoutes.GET("/gql", gqlHandlerFunc)
+		gqlRoutes.POST("/gql", gqlHandlerFunc)
+	}
 
 	authRoutes := r.Group("api/auth")
 	{

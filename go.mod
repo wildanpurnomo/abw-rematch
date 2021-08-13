@@ -11,6 +11,8 @@ require (
 	github.com/go-playground/assert/v2 v2.0.1
 	github.com/golang-jwt/jwt v3.2.1+incompatible
 	github.com/gosimple/slug v1.10.0
+	github.com/graphql-go/graphql v0.7.9
+	github.com/graphql-go/handler v0.2.3
 	github.com/jinzhu/gorm v1.9.16
 	github.com/joho/godotenv v1.3.0
 	github.com/lib/pq v1.1.1
