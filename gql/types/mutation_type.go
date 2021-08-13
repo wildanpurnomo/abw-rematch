@@ -45,6 +45,19 @@ var MutationType = graphql.NewObject(
 				},
 				Resolve: gqlresolvers.UpdateUsernameResolver,
 			},
+			"update_password": &graphql.Field{
+				Type:        graphql.Boolean,
+				Description: "Update requesting user's password",
+				Args: graphql.FieldConfigArgument{
+					"old_password": &graphql.ArgumentConfig{
+						Type: graphql.NewNonNull(graphql.String),
+					},
+					"new_password": &graphql.ArgumentConfig{
+						Type: graphql.NewNonNull(graphql.String),
+					},
+				},
+				Resolve: gqlresolvers.UpdatePasswordResolver,
+			},
 		},
 	},
 )
