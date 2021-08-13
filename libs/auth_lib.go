@@ -23,6 +23,10 @@ var (
 	JwtSecret       = []byte(os.Getenv("JWT_SECRET"))
 )
 
+func (c *ContextValues) InvalidateToken() {
+	c.GinContext.SetCookie("jwt", "", 1, "/", "", false, true)
+}
+
 func (c *ContextValues) SetJwtToken(token string) {
 	c.GinContext.SetCookie("jwt", token, 60*60*24, "/", "", false, true)
 }

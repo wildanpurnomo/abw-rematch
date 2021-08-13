@@ -14,6 +14,12 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+var LogoutResolver = func(params graphql.ResolveParams) (interface{}, error) {
+	cookieAccess := libs.GetContextValues(params.Context)
+	cookieAccess.InvalidateToken()
+	return true, nil
+}
+
 var AuthenticateResolver = func(params graphql.ResolveParams) (interface{}, error) {
 	cookieAccess := libs.GetContextValues(params.Context)
 	userId := cookieAccess.UserID
