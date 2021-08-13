@@ -5,6 +5,15 @@ import (
 	gqlresolvers "github.com/wildanpurnomo/abw-rematch/gql/resolvers"
 )
 
+var AuthFieldConfigArguments = graphql.FieldConfigArgument{
+	"username": &graphql.ArgumentConfig{
+		Type: graphql.NewNonNull(graphql.String),
+	},
+	"password": &graphql.ArgumentConfig{
+		Type: graphql.NewNonNull(graphql.String),
+	},
+}
+
 var MutationType = graphql.NewObject(
 	graphql.ObjectConfig{
 		Name: "Mutation",
@@ -12,15 +21,14 @@ var MutationType = graphql.NewObject(
 			"register": &graphql.Field{
 				Type:        UserType,
 				Description: "Register new user",
-				Args: graphql.FieldConfigArgument{
-					"username": &graphql.ArgumentConfig{
-						Type: graphql.NewNonNull(graphql.String),
-					},
-					"password": &graphql.ArgumentConfig{
-						Type: graphql.NewNonNull(graphql.String),
-					},
-				},
-				Resolve: gqlresolvers.RegisterResolver,
+				Args:        AuthFieldConfigArguments,
+				Resolve:     gqlresolvers.RegisterResolver,
+			},
+			"login": &graphql.Field{
+				Type:        UserType,
+				Description: "Log in to system",
+				Args:        AuthFieldConfigArguments,
+				Resolve:     gqlresolvers.LoginResolver,
 			},
 		},
 	},
