@@ -17,16 +17,6 @@ import (
 	"github.com/wildanpurnomo/abw-rematch/repositories"
 )
 
-func GetUserContents(c *gin.Context) {
-	userId := c.GetString(libs.AuthContextKey)
-	var contents []models.Content
-	if err := repositories.Repo.GetContentByUserId(&contents, userId); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-	} else {
-		c.JSON(http.StatusOK, gin.H{"data": contents})
-	}
-}
-
 func GetContentBySlug(c *gin.Context) {
 	// extract slug
 	slug := c.Param("slug")
@@ -50,13 +40,18 @@ func GetContentBySlug(c *gin.Context) {
 }
 
 func CreateContent(c *gin.Context) {
+	cookieAccess := libs.GetContextValues(c.Request.Context())
+	userId := cookieAccess.UserID
+	if userId == "0" {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token or user not found"})
+		return
+	}
+
 	var input models.CreateContentInput
 	if err := c.Bind(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-
-	userId := c.GetString(libs.AuthContextKey)
 
 	// trim title and body
 	input.Title = strings.TrimSpace(input.Title)

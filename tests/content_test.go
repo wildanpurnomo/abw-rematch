@@ -42,7 +42,7 @@ func TestCreateContent_NoJwt(t *testing.T) {
 
 	// assert response body
 	jsonString := w.Body.String()
-	assert.Equal(t, true, strings.Contains(jsonString, `"error":"Unauthorized client"`))
+	assert.Equal(t, true, strings.Contains(jsonString, `"error":"Invalid token or user not found"`))
 }
 
 func TestCreateContent_NoRequestPayload(t *testing.T) {

@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/graphql-go/handler"
 	"github.com/joho/godotenv"
+	"github.com/wildanpurnomo/abw-rematch/controllers"
 	gqlschema "github.com/wildanpurnomo/abw-rematch/gql/schema"
 	"github.com/wildanpurnomo/abw-rematch/libs"
 	"github.com/wildanpurnomo/abw-rematch/models"
@@ -57,6 +58,12 @@ func main() {
 	{
 		gqlRoutes.GET("/gql", gqlHandlerFunc)
 		gqlRoutes.POST("/gql", gqlHandlerFunc)
+	}
+
+	contentRestRoutes := r.Group("/api")
+	{
+		contentRestRoutes.POST("/content/create", controllers.CreateContent)
+		contentRestRoutes.PUT("/content/update/:contentId", controllers.UpdateContent)
 	}
 
 	r.Run()
