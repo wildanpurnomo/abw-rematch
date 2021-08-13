@@ -3,9 +3,7 @@ package libs
 import (
 	"context"
 	"fmt"
-	"net/http"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -14,28 +12,23 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-type CookieAccess struct {
+type ContextValues struct {
 	GinContext *gin.Context
+	UserID     string
 }
 
 var (
-	AuthContextKey         = "auth"
-	CookieSetterContextKey = "cookie-setter"
-	JwtSecret              = []byte(os.Getenv("JWT_SECRET"))
-	PublicEndpoints        = []string{
-		"api/auth/login",
-		"api/auth/register",
-		"api/content/browse/",
-		"api/gql",
-	}
+	AuthContextKey  = "auth"
+	ContextValueKey = "context-values"
+	JwtSecret       = []byte(os.Getenv("JWT_SECRET"))
 )
 
-func (c *CookieAccess) SetJwtToken(token string) {
+func (c *ContextValues) SetJwtToken(token string) {
 	c.GinContext.SetCookie("jwt", token, 60*60*24, "/", "", false, true)
 }
 
-func GetCookieSetter(ctx context.Context) *CookieAccess {
-	return ctx.Value(CookieSetterContextKey).(*CookieAccess)
+func GetContextValues(ctx context.Context) *ContextValues {
+	return ctx.Value(ContextValueKey).(*ContextValues)
 }
 
 func VerifyPassword(hashed []byte, plain []byte) bool {
@@ -86,36 +79,17 @@ func GenerateToken(userId uint) (string, bool) {
 
 func AuthMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		if !IsPublicEndpoint(c.Request.URL.Path) {
-			userId, status := VerifyJwt(c)
-			if !status {
-				c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized client"})
-				c.Abort()
-				return
-			}
-
-			c.Set(AuthContextKey, fmt.Sprint(userId))
-		}
-
+		userId, _ := VerifyJwt(c)
 		c.Request = c.Request.WithContext(
 			context.WithValue(
-				context.Background(),
-				CookieSetterContextKey,
-				&CookieAccess{
+				c.Request.Context(),
+				ContextValueKey,
+				&ContextValues{
 					GinContext: c,
+					UserID:     fmt.Sprint(userId),
 				},
 			),
 		)
 		c.Next()
 	}
-}
-
-func IsPublicEndpoint(path string) bool {
-	for _, endpoint := range PublicEndpoints {
-		if strings.Contains(path, endpoint) {
-			return true
-		}
-	}
-
-	return false
 }

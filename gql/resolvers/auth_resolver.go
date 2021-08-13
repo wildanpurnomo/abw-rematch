@@ -14,6 +14,21 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
+var AuthenticateResolver = func(params graphql.ResolveParams) (interface{}, error) {
+	cookieAccess := libs.GetContextValues(params.Context)
+	userId := cookieAccess.UserID
+	if userId == "0" {
+		return nil, errors.New("Invalid token or user not found")
+	}
+
+	var user models.User
+	if err := repositories.Repo.FetchUserById(&user, userId); err != nil {
+		return nil, errors.New("Invalid token or user not found")
+	}
+
+	return user, nil
+}
+
 var LoginResolver = func(params graphql.ResolveParams) (interface{}, error) {
 	var input models.UserAuthInput
 
@@ -37,7 +52,7 @@ var LoginResolver = func(params graphql.ResolveParams) (interface{}, error) {
 		return nil, errors.New("Invalid username or password")
 	}
 
-	cookieAccess := libs.GetCookieSetter(params.Context)
+	cookieAccess := libs.GetContextValues(params.Context)
 	cookieAccess.SetJwtToken(token)
 
 	return user, nil
@@ -94,7 +109,7 @@ var RegisterResolver = func(params graphql.ResolveParams) (interface{}, error) {
 	if !status {
 		return nil, errors.New("Whoops!")
 	}
-	cookieAccess := libs.GetCookieSetter(params.Context)
+	cookieAccess := libs.GetContextValues(params.Context)
 	cookieAccess.SetJwtToken(token)
 
 	return newUser, nil

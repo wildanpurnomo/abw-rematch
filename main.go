@@ -7,7 +7,6 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/graphql-go/handler"
 	"github.com/joho/godotenv"
-	"github.com/wildanpurnomo/abw-rematch/controllers"
 	gqlschema "github.com/wildanpurnomo/abw-rematch/gql/schema"
 	"github.com/wildanpurnomo/abw-rematch/libs"
 	"github.com/wildanpurnomo/abw-rematch/models"
@@ -58,28 +57,6 @@ func main() {
 	{
 		gqlRoutes.GET("/gql", gqlHandlerFunc)
 		gqlRoutes.POST("/gql", gqlHandlerFunc)
-	}
-
-	authRoutes := r.Group("api/auth")
-	{
-		authRoutes.GET("/authenticate", controllers.Authenticate)
-		authRoutes.POST("/register", controllers.Register)
-		authRoutes.POST("/login", controllers.Login)
-		authRoutes.POST("/logout", controllers.Logout)
-	}
-
-	userRoutes := r.Group("api/user")
-	{
-		userRoutes.PUT("/update-username", controllers.UpdateUsername)
-		userRoutes.PUT("/update-password", controllers.UpdatePassword)
-	}
-
-	contentRoutes := r.Group("api/content")
-	{
-		contentRoutes.GET("/me", controllers.GetUserContents)
-		contentRoutes.GET("/browse/:slug", controllers.GetContentBySlug)
-		contentRoutes.POST("/create", controllers.CreateContent)
-		contentRoutes.PUT("/edit/:contentId", controllers.UpdateContent)
 	}
 
 	r.Run()
