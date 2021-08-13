@@ -62,6 +62,7 @@ func main() {
 
 	contentRestRoutes := r.Group("/api")
 	{
+		contentRestRoutes.GET("/content/detail/:slug", controllers.GetContentBySlug)
 		contentRestRoutes.POST("/content/create", controllers.CreateContent)
 		contentRestRoutes.PUT("/content/update/:contentId", controllers.UpdateContent)
 	}

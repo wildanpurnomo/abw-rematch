@@ -1,6 +1,8 @@
 package gqltypes
 
-import "github.com/graphql-go/graphql"
+import (
+	"github.com/graphql-go/graphql"
+)
 
 var UserType = graphql.NewObject(
 	graphql.ObjectConfig{
@@ -18,6 +20,9 @@ var UserType = graphql.NewObject(
 			"contents": &graphql.Field{
 				Type: &graphql.List{
 					OfType: ContentType,
+				},
+				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
+					return nil, nil
 				},
 			},
 		},
