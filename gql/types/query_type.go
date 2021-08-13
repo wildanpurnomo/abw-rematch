@@ -19,9 +19,7 @@ var QueryType = graphql.NewObject(
 					OfType: ContentType,
 				},
 				Description: "Get requesting user's content list",
-				Resolve: func(p graphql.ResolveParams) (interface{}, error) {
-					return nil, nil
-				},
+				Resolve:     gqlresolvers.GetUserContentsResolver,
 			},
 		},
 	},
