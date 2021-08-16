@@ -17,6 +17,10 @@ func (p *Repository) GetContentByUserId(contents *[]models.Content, userId strin
 	return p.db.Where("user_id = ?", userId).Find(&contents).Error
 }
 
+func (p *Repository) GetContentInUserIds(contents *[]models.Content, userIds []string) error {
+	return p.db.Where("user_id IN (?)", userIds).Find(&contents).Error
+}
+
 func (p *Repository) GetContentByUserIdAndContentId(content *models.Content, userId string, contentId string) error {
 	return p.db.Where("user_id = ? AND id = ?", userId, contentId).First(&content).Error
 }

@@ -2,9 +2,6 @@
 # use alpine for lightweight image output
 FROM golang:alpine as builder
 
-# maintainer label
-LABEL maintainer="wildanpurnomo <wildanpurnomo@gmail.com>"
-
 # install git
 RUN apk update && apk add --no-cache git
 
