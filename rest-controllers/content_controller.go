@@ -40,8 +40,8 @@ func GetContentBySlug(c *gin.Context) {
 }
 
 func CreateContent(c *gin.Context) {
-	cookieAccess := libs.GetContextValues(c.Request.Context())
-	userId := cookieAccess.UserID
+	contextValue := libs.GetContextValues(c.Request.Context())
+	userId := contextValue.UserID
 	if userId == "0" {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token or user not found"})
 		return

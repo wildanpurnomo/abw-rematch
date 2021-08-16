@@ -8,11 +8,11 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/graphql-go/handler"
 	"github.com/joho/godotenv"
-	"github.com/wildanpurnomo/abw-rematch/controllers"
 	gqlschema "github.com/wildanpurnomo/abw-rematch/gql/schema"
 	"github.com/wildanpurnomo/abw-rematch/libs"
 	"github.com/wildanpurnomo/abw-rematch/models"
 	"github.com/wildanpurnomo/abw-rematch/repositories"
+	controllers "github.com/wildanpurnomo/abw-rematch/rest-controllers"
 )
 
 func main() {

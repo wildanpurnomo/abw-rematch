@@ -11,8 +11,8 @@ import (
 )
 
 var DeleteContentById = func(params graphql.ResolveParams) (interface{}, error) {
-	cookieAccess := libs.GetContextValues(params.Context)
-	userId := cookieAccess.UserID
+	contextValue := libs.GetContextValues(params.Context)
+	userId := contextValue.UserID
 	if userId == "0" {
 		return nil, errors.New("Invalid token or user not found")
 	}
@@ -45,8 +45,8 @@ var GetContentsByUserId = func(params graphql.ResolveParams) (interface{}, error
 }
 
 var GetMyContentsResolver = func(params graphql.ResolveParams) (interface{}, error) {
-	cookieAccess := libs.GetContextValues(params.Context)
-	userId := cookieAccess.UserID
+	contextValue := libs.GetContextValues(params.Context)
+	userId := contextValue.UserID
 	if userId == "0" {
 		return nil, errors.New("Invalid token or user not found")
 	}

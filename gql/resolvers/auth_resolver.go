@@ -15,14 +15,14 @@ import (
 )
 
 var LogoutResolver = func(params graphql.ResolveParams) (interface{}, error) {
-	cookieAccess := libs.GetContextValues(params.Context)
-	cookieAccess.InvalidateToken()
+	contextValue := libs.GetContextValues(params.Context)
+	contextValue.InvalidateToken()
 	return true, nil
 }
 
 var AuthenticateResolver = func(params graphql.ResolveParams) (interface{}, error) {
-	cookieAccess := libs.GetContextValues(params.Context)
-	userId := cookieAccess.UserID
+	contextValue := libs.GetContextValues(params.Context)
+	userId := contextValue.UserID
 	if userId == "0" {
 		return nil, errors.New("Invalid token or user not found")
 	}
@@ -58,8 +58,8 @@ var LoginResolver = func(params graphql.ResolveParams) (interface{}, error) {
 		return nil, errors.New("Invalid username or password")
 	}
 
-	cookieAccess := libs.GetContextValues(params.Context)
-	cookieAccess.SetJwtToken(token)
+	contextValue := libs.GetContextValues(params.Context)
+	contextValue.SetJwtToken(token)
 
 	return user, nil
 }
@@ -115,8 +115,8 @@ var RegisterResolver = func(params graphql.ResolveParams) (interface{}, error) {
 	if !status {
 		return nil, errors.New("Whoops!")
 	}
-	cookieAccess := libs.GetContextValues(params.Context)
-	cookieAccess.SetJwtToken(token)
+	contextValue := libs.GetContextValues(params.Context)
+	contextValue.SetJwtToken(token)
 
 	return newUser, nil
 }

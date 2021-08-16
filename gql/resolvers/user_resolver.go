@@ -37,8 +37,8 @@ var GetUserByIdResolver = func(params graphql.ResolveParams) (interface{}, error
 }
 
 var UpdatePasswordResolver = func(params graphql.ResolveParams) (interface{}, error) {
-	cookieAccess := libs.GetContextValues(params.Context)
-	userId := cookieAccess.UserID
+	contextValue := libs.GetContextValues(params.Context)
+	userId := contextValue.UserID
 	if userId == "0" {
 		return false, errors.New("Invalid token or user not found")
 	}
@@ -82,8 +82,8 @@ var UpdatePasswordResolver = func(params graphql.ResolveParams) (interface{}, er
 }
 
 var UpdateUsernameResolver = func(params graphql.ResolveParams) (interface{}, error) {
-	cookieAccess := libs.GetContextValues(params.Context)
-	userId := cookieAccess.UserID
+	contextValue := libs.GetContextValues(params.Context)
+	userId := contextValue.UserID
 	if userId == "0" {
 		return nil, errors.New("Invalid token or user not found")
 	}

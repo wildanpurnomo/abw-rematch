@@ -13,9 +13,9 @@ import (
 	"github.com/jinzhu/gorm"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/wildanpurnomo/abw-rematch/controllers"
 	"github.com/wildanpurnomo/abw-rematch/libs"
 	"github.com/wildanpurnomo/abw-rematch/repositories"
+	controllers "github.com/wildanpurnomo/abw-rematch/rest-controllers"
 )
 
 var (
