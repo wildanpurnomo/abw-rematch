@@ -12,7 +12,7 @@ import (
 
 type FirebaseService interface {
 	UploadFile(*multipart.FileHeader, string) error
-	DeleteFile(string) error
+	DeleteFile([]string) error
 }
 
 type FirebaseLib struct {
@@ -27,8 +27,8 @@ func (f FirebaseLib) BeginUpload(fileHeader *multipart.FileHeader, bucketName st
 	return nil
 }
 
-func (f FirebaseLib) BeginDeleteFile(bucketName string) error {
-	if err := f.firebaseService.DeleteFile(bucketName); err != nil {
+func (f FirebaseLib) BeginDeleteFile(bucketNames []string) error {
+	if err := f.firebaseService.DeleteFile(bucketNames); err != nil {
 		return err
 	}
 
@@ -42,7 +42,7 @@ type UploadService struct {
 	App *firebase.App
 }
 
-func (u UploadService) DeleteFile(bucketName string) error {
+func (u UploadService) DeleteFile(bucketNames []string) error {
 	ctx := context.Background()
 	storage, err := u.App.Storage(ctx)
 	if err != nil {
@@ -54,11 +54,10 @@ func (u UploadService) DeleteFile(bucketName string) error {
 		return err
 	}
 
-	obj := bkt.Object(bucketName)
-	if err := obj.Delete(ctx); err != nil {
-		return err
+	for _, bktName := range bucketNames {
+		obj := bkt.Object(bktName)
+		obj.Delete(ctx)
 	}
-
 	return nil
 }
 

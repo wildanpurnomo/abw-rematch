@@ -17,7 +17,7 @@ func (p *Repository) GetContentByUserId(contents *[]models.Content, userId strin
 	return p.db.Where("user_id = ?", userId).Find(&contents).Error
 }
 
-func (p *Repository) GetContentByUserIdAndContentId(content *models.Content, userId string, contentId uint) error {
+func (p *Repository) GetContentByUserIdAndContentId(content *models.Content, userId string, contentId string) error {
 	return p.db.Where("user_id = ? AND id = ?", userId, contentId).First(&content).Error
 }
 
@@ -31,4 +31,8 @@ func (p *Repository) CreateNewContent(content *models.Content) error {
 
 func (p *Repository) UpdateContent(content *models.Content, update models.Content) error {
 	return p.db.Model(&content).Updates(update).Error
+}
+
+func (p *Repository) DeleteContent(content *models.Content) error {
+	return p.db.Model(&content).Delete(&content).Error
 }

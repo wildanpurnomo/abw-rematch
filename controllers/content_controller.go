@@ -128,7 +128,7 @@ func UpdateContent(c *gin.Context) {
 
 	// check whether user is authorized to edit requested content
 	var content models.Content
-	if err := repositories.Repo.GetContentByUserIdAndContentId(&content, userId, uint(contentId)); err != nil {
+	if err := repositories.Repo.GetContentByUserIdAndContentId(&content, userId, fmt.Sprint(contentId)); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Content not found or unauthorized user"})
 		return
 	}
@@ -139,11 +139,7 @@ func UpdateContent(c *gin.Context) {
 		files := form.File["media"]
 		if len(files) > 0 {
 			// delete existing media
-			for _, fileUrl := range content.MediaUrls {
-				lastIndex := strings.Index(fileUrl, "?")
-				bktName := fileUrl[70:lastIndex]
-				libs.UploadLib.BeginDeleteFile(bktName)
-			}
+			libs.UploadLib.BeginDeleteFile(content.GetMediaBucketNames())
 
 			// upload new media and assign new urls
 			for index, file := range files {

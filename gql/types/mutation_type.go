@@ -58,6 +58,16 @@ var MutationType = graphql.NewObject(
 				},
 				Resolve: gqlresolvers.UpdatePasswordResolver,
 			},
+			"delete_content": &graphql.Field{
+				Type:        graphql.Boolean,
+				Description: "Delete one of requesting user's content",
+				Args: graphql.FieldConfigArgument{
+					"content_id": &graphql.ArgumentConfig{
+						Type: graphql.NewNonNull(graphql.ID),
+					},
+				},
+				Resolve: gqlresolvers.DeleteContentById,
+			},
 		},
 	},
 )

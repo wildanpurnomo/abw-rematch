@@ -1,6 +1,7 @@
 package models
 
 import (
+	"strings"
 	"time"
 
 	"github.com/lib/pq"
@@ -18,6 +19,16 @@ type Content struct {
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 	DeletedAt    *time.Time `json:"-" sql:"index"`
+}
+
+func (c *Content) GetMediaBucketNames() []string {
+	bktNames := []string{}
+	for _, fileUrl := range c.MediaUrls {
+		lastIndex := strings.Index(fileUrl, "?")
+		bktName := fileUrl[70:lastIndex]
+		bktNames = append(bktNames, bktName)
+	}
+	return bktNames
 }
 
 type CreateContentInput struct {
