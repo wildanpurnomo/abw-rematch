@@ -1,6 +1,8 @@
 package models
 
 import (
+	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/lib/pq"
@@ -18,6 +20,26 @@ type Content struct {
 	CreatedAt    time.Time
 	UpdatedAt    time.Time
 	DeletedAt    *time.Time `json:"-" sql:"index"`
+}
+
+func (c *Content) Name() string {
+	return "ContentModelType"
+}
+
+func (c *Content) Description() string {
+	return "User's content data"
+}
+
+func (c *Content) String() string {
+	out, err := json.Marshal(c)
+	if err != nil {
+		return ""
+	}
+	return string(out)
+}
+
+func (c *Content) Error() error {
+	return errors.New("Whoops content")
 }
 
 type CreateContentInput struct {

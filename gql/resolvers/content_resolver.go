@@ -2,6 +2,7 @@ package gqlresolvers
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/graphql-go/graphql"
 	"github.com/wildanpurnomo/abw-rematch/libs"
@@ -9,7 +10,18 @@ import (
 	"github.com/wildanpurnomo/abw-rematch/repositories"
 )
 
-var GetUserContentsResolver = func(params graphql.ResolveParams) (interface{}, error) {
+var GetContentsByUserId = func(params graphql.ResolveParams) (interface{}, error) {
+	source := params.Source.(models.User)
+
+	var contents []models.Content
+	if err := repositories.Repo.GetContentByUserId(&contents, fmt.Sprint(source.ID)); err != nil {
+		return nil, errors.New("Whoops!")
+	}
+
+	return contents, nil
+}
+
+var GetMyContentsResolver = func(params graphql.ResolveParams) (interface{}, error) {
 	cookieAccess := libs.GetContextValues(params.Context)
 	userId := cookieAccess.UserID
 	if userId == "0" {

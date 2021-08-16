@@ -5,7 +5,7 @@ import (
 	"github.com/wildanpurnomo/abw-rematch/models"
 )
 
-func (p *Repository) GetContentById(content *models.Content, contentId uint) error {
+func (p *Repository) GetContentById(content *models.Content, contentId string) error {
 	return p.db.Where("id = ?", contentId).First(&content).Error
 }
 

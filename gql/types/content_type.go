@@ -1,10 +1,12 @@
 package gqltypes
 
-import "github.com/graphql-go/graphql"
+import (
+	"github.com/graphql-go/graphql"
+)
 
 var ContentType = graphql.NewObject(
 	graphql.ObjectConfig{
-		Name: "Content",
+		Name: "ContentType",
 		Fields: graphql.Fields{
 			"id": &graphql.Field{
 				Type: graphql.ID,
@@ -35,3 +37,7 @@ var ContentType = graphql.NewObject(
 		},
 	},
 )
+
+func AddFieldToContentType(fieldName string, fieldConfig *graphql.Field) {
+	ContentType.AddFieldConfig(fieldName, fieldConfig)
+}

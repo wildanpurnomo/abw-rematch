@@ -2,6 +2,7 @@ package gqlresolvers
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/graphql-go/graphql"
@@ -10,6 +11,17 @@ import (
 	"github.com/wildanpurnomo/abw-rematch/repositories"
 	"golang.org/x/crypto/bcrypt"
 )
+
+var GetUserByIdResolver = func(params graphql.ResolveParams) (interface{}, error) {
+	source := params.Source.(models.Content)
+
+	var user models.User
+	if err := repositories.Repo.FetchUserById(&user, fmt.Sprint(source.UserID)); err != nil {
+		return nil, errors.New("Invalid token or user not found")
+	}
+
+	return user, nil
+}
 
 var UpdatePasswordResolver = func(params graphql.ResolveParams) (interface{}, error) {
 	cookieAccess := libs.GetContextValues(params.Context)

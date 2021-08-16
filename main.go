@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/graphql-go/handler"
@@ -19,6 +20,10 @@ func main() {
 
 	if err != nil {
 		panic("Error loading .env file")
+	}
+
+	if os.Getenv("ENV_SCHEMA") == "https" {
+		gin.SetMode(gin.ReleaseMode)
 	}
 	r := gin.Default()
 

@@ -14,12 +14,12 @@ var QueryType = graphql.NewObject(
 				Description: "Get requesting user's data",
 				Resolve:     gqlresolvers.AuthenticateResolver,
 			},
-			"user_contents": &graphql.Field{
+			"my_contents": &graphql.Field{
 				Type: &graphql.List{
 					OfType: ContentType,
 				},
 				Description: "Get requesting user's content list",
-				Resolve:     gqlresolvers.GetUserContentsResolver,
+				Resolve:     gqlresolvers.GetMyContentsResolver,
 			},
 		},
 	},

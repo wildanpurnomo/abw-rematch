@@ -1,6 +1,8 @@
 package models
 
 import (
+	"encoding/json"
+	"errors"
 	"time"
 
 	"github.com/golang-jwt/jwt"
@@ -17,6 +19,26 @@ type User struct {
 	CreatedAt      time.Time
 	UpdatedAt      time.Time
 	DeletedAt      *time.Time `json:"-" sql:"index"`
+}
+
+func (u *User) Name() string {
+	return "UserModelType"
+}
+
+func (u *User) Description() string {
+	return "User's data"
+}
+
+func (u *User) String() string {
+	out, err := json.Marshal(u)
+	if err != nil {
+		return ""
+	}
+	return string(out)
+}
+
+func (u *User) Error() error {
+	return errors.New("Whoops user")
 }
 
 type UserAuthInput struct {
