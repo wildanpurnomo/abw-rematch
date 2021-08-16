@@ -5,22 +5,35 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/graph-gophers/dataloader"
 	"github.com/graphql-go/graphql"
+	gqldataloaders "github.com/wildanpurnomo/abw-rematch/gql/dataloaders"
 	"github.com/wildanpurnomo/abw-rematch/libs"
 	"github.com/wildanpurnomo/abw-rematch/models"
 	"github.com/wildanpurnomo/abw-rematch/repositories"
 	"golang.org/x/crypto/bcrypt"
 )
 
+var (
+	loader = dataloader.NewBatchedLoader(gqldataloaders.UserBatchFn)
+)
+
 var GetUserByIdResolver = func(params graphql.ResolveParams) (interface{}, error) {
 	source := params.Source.(models.Content)
+	userId := fmt.Sprint(source.UserID)
 
-	var user models.User
-	if err := repositories.Repo.FetchUserById(&user, fmt.Sprint(source.UserID)); err != nil {
-		return nil, errors.New("Invalid token or user not found")
+	thunk := loader.Load(params.Context, dataloader.StringKey(userId))
+	result, err := thunk()
+	if err != nil {
+		return nil, err
 	}
 
-	return user, nil
+	userMap := make(map[string]interface{})
+	for _, item := range result.([]models.User) {
+		userMap[userId] = item
+	}
+
+	return userMap[userId], nil
 }
 
 var UpdatePasswordResolver = func(params graphql.ResolveParams) (interface{}, error) {

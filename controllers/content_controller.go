@@ -139,7 +139,7 @@ func UpdateContent(c *gin.Context) {
 		files := form.File["media"]
 		if len(files) > 0 {
 			// delete existing media
-			libs.UploadLib.BeginDeleteFile(content.GetMediaBucketNames())
+			go libs.UploadLib.BeginDeleteFile(content.GetMediaBucketNames())
 
 			// upload new media and assign new urls
 			for index, file := range files {
