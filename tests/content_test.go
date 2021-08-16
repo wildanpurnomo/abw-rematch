@@ -24,7 +24,7 @@ var (
 
 func TestCreateContent_NoJwt(t *testing.T) {
 	// init gin for testing
-	r := libs.InitGinForTesting()
+	r := InitRESTServerTesting()
 	r.POST(createContentEndpoint, controllers.CreateContent)
 
 	// begin test
@@ -47,7 +47,7 @@ func TestCreateContent_NoJwt(t *testing.T) {
 
 func TestCreateContent_NoRequestPayload(t *testing.T) {
 	// init gin for testing
-	r := libs.InitGinForTesting()
+	r := InitRESTServerTesting()
 	r.POST(createContentEndpoint, controllers.CreateContent)
 
 	// begin test
@@ -71,7 +71,7 @@ func TestCreateContent_NoRequestPayload(t *testing.T) {
 
 func TestCreateContent_TitleNotUnique(t *testing.T) {
 	// init gin for testing
-	r := libs.InitGinForTesting()
+	r := InitRESTServerTesting()
 	r.POST(createContentEndpoint, controllers.CreateContent)
 
 	// init sql mock
@@ -119,12 +119,12 @@ func TestCreateContent_TitleNotUnique(t *testing.T) {
 
 // TODO @wildanpurnomo
 func TestCreateContent_FailedUpload(t *testing.T) {
-	mockUploadSvc := new(libs.MockObject)
+	mockUploadSvc := new(MockObject)
 	mockUploadSvc.On("UploadFile", mock.Anything, mock.Anything).Return(errors.New("testing error upload"))
 }
 
 // TODO @wildanpurnomo
 func TestCreateContent_SuccessfulProcess(t *testing.T) {
-	mockUploadSvc := new(libs.MockObject)
+	mockUploadSvc := new(MockObject)
 	mockUploadSvc.On("UploadFile", mock.Anything, mock.Anything).Return(nil)
 }
