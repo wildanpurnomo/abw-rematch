@@ -32,8 +32,6 @@ var (
 			return false, errors.New("Whoops!")
 		}
 
-		go libs.UploadLib.BeginDeleteFile(content.GetMediaBucketNames())
-
 		return true, nil
 	}
 	GetContentsByUserId = func(params graphql.ResolveParams) (interface{}, error) {
