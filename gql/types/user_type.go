@@ -2,7 +2,6 @@ package gqltypes
 
 import (
 	"github.com/graphql-go/graphql"
-	gqlresolvers "github.com/wildanpurnomo/abw-rematch/gql/resolvers"
 )
 
 var UserType = graphql.NewObject(
@@ -17,12 +16,6 @@ var UserType = graphql.NewObject(
 			},
 			"points": &graphql.Field{
 				Type: graphql.Int,
-			},
-			"contents": &graphql.Field{
-				Type: &graphql.List{
-					OfType: ContentType,
-				},
-				Resolve: gqlresolvers.GetContentsByUserId,
 			},
 		},
 	},

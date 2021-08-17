@@ -13,8 +13,8 @@ func (p *Repository) GetContentBySlug(content *models.Content, slug string) erro
 	return p.db.Where("slug = ?", slug).First(&content).Error
 }
 
-func (p *Repository) GetContentByUserId(contents *[]models.Content, userId string) error {
-	return p.db.Where("user_id = ?", userId).Find(&contents).Error
+func (p *Repository) GetContentByUserId(contents *[]models.Content, userId string, limit int, offset int) error {
+	return p.db.Where("user_id = ?", userId).Limit(limit).Offset(offset).Find(&contents).Error
 }
 
 func (p *Repository) GetContentInUserIds(contents *[]models.Content, userIds []string) error {

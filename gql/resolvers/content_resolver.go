@@ -62,8 +62,11 @@ var (
 			return nil, errors.New("Invalid token or user not found")
 		}
 
+		limit := params.Args["limit"].(int)
+		offset := params.Args["offset"].(int)
+
 		var contents []models.Content
-		if err := repositories.Repo.GetContentByUserId(&contents, userId); err != nil {
+		if err := repositories.Repo.GetContentByUserId(&contents, userId, limit, offset); err != nil {
 			return nil, errors.New("Whoops!")
 		}
 
