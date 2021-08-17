@@ -2,7 +2,6 @@ package gqldataloaders
 
 import (
 	"context"
-	"log"
 
 	"github.com/graph-gophers/dataloader"
 	"github.com/wildanpurnomo/abw-rematch/models"
@@ -14,7 +13,6 @@ var ContentBatchFn = func(ctx context.Context, keys dataloader.Keys) []*dataload
 	var result dataloader.Result
 
 	var contents []models.Content
-	log.Println(keys.Keys())
 	if err := repositories.Repo.GetContentInUserIds(&contents, keys.Keys()); err != nil {
 		result.Error = err
 	} else {

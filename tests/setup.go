@@ -1,15 +1,30 @@
 package tests
 
 import (
+	"database/sql"
+	"database/sql/driver"
 	"log"
 	"mime/multipart"
+	"net/http"
+	"net/http/httptest"
+	"regexp"
+	"strings"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/gin-gonic/gin"
 	"github.com/graphql-go/handler"
+	"github.com/jinzhu/gorm"
 	"github.com/stretchr/testify/mock"
 	gqlschema "github.com/wildanpurnomo/abw-rematch/gql/schema"
 	"github.com/wildanpurnomo/abw-rematch/libs"
+	"github.com/wildanpurnomo/abw-rematch/repositories"
 )
+
+type MockSQLQuery struct {
+	Query     string
+	Args      []driver.Value
+	Returning []*sqlmock.Rows
+}
 
 type MockObject struct {
 	mock.Mock
@@ -51,4 +66,44 @@ func InitGQLServerTesting() *gin.Engine {
 	}
 
 	return r
+}
+
+func BeginGraphQLServerTesting(fullPath string, cookie http.Cookie) *httptest.ResponseRecorder {
+	r := InitGQLServerTesting()
+	req := httptest.NewRequest(http.MethodPost, fullPath, nil)
+	req.AddCookie(&cookie)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	return w
+}
+
+func StubSQLQuery(m MockSQLQuery) (*sql.DB, *gorm.DB, error) {
+	sqlMockDb, mock, err := sqlmock.New()
+	if err != nil {
+		return nil, nil, err
+	}
+
+	gormDb, err := gorm.Open("postgres", sqlMockDb)
+	if err != nil {
+		sqlMockDb.Close()
+		return nil, nil, err
+	}
+
+	isSelectQuery := strings.Contains(m.Query, "SELECT")
+	if !isSelectQuery {
+		mock.ExpectBegin()
+	}
+
+	mock.ExpectQuery(regexp.QuoteMeta(m.Query)).
+		WithArgs(m.Args...).
+		WillReturnRows(m.Returning...)
+
+	if !isSelectQuery {
+		mock.ExpectCommit()
+	}
+
+	repositories.InitRepository(gormDb)
+
+	return sqlMockDb, gormDb, nil
 }

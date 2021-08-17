@@ -1,20 +1,18 @@
 package tests
 
 import (
+	"database/sql/driver"
 	"errors"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"regexp"
 	"strings"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/jinzhu/gorm"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/wildanpurnomo/abw-rematch/libs"
-	"github.com/wildanpurnomo/abw-rematch/repositories"
 	controllers "github.com/wildanpurnomo/abw-rematch/rest-controllers"
 )
 
@@ -52,7 +50,7 @@ func TestCreateContent_NoRequestPayload(t *testing.T) {
 
 	// begin test
 	token, _ := libs.GenerateToken(1)
-	req := httptest.NewRequest("POST", createContentEndpoint, nil)
+	req := httptest.NewRequest(http.MethodPost, createContentEndpoint, nil)
 	req.AddCookie(&http.Cookie{
 		Name:  "jwt",
 		Value: token,
@@ -74,24 +72,24 @@ func TestCreateContent_TitleNotUnique(t *testing.T) {
 	r := InitRESTServerTesting()
 	r.POST(createContentEndpoint, controllers.CreateContent)
 
-	// init sql mock
-	sqlMockDb, mock, _ := sqlmock.New()
-	defer sqlMockDb.Close()
-
-	gormDb, _ := gorm.Open("postgres", sqlMockDb)
-	defer gormDb.Close()
-
-	// mock query that will be executed
-	const query = `SELECT * FROM "contents"  WHERE "contents"."deleted_at" IS NULL AND ((user_id = $1 AND title = $2)) ORDER BY "contents"."id" ASC LIMIT 1`
-	mock.ExpectQuery(regexp.QuoteMeta(query)).
-		WithArgs(
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
-		).
-		WillReturnRows(mock.NewRows([]string{"id"}).AddRow(1))
-
-	// assign mock db to repository
-	repositories.InitRepository(gormDb)
+	// stub sql
+	mockSqlDb, mockGormDb, err := StubSQLQuery(
+		MockSQLQuery{
+			Query: `SELECT * FROM "contents"  WHERE "contents"."deleted_at" IS NULL AND ((user_id = $1 AND title = $2)) ORDER BY "contents"."id" ASC LIMIT 1`,
+			Args: []driver.Value{
+				sqlmock.AnyArg(),
+				sqlmock.AnyArg(),
+			},
+			Returning: []*sqlmock.Rows{
+				sqlmock.NewRows([]string{"id"}).AddRow(1),
+			},
+		},
+	)
+	if err != nil {
+		t.Fatalf("error mock sql: %v", err)
+	}
+	defer mockSqlDb.Close()
+	defer mockGormDb.Close()
 
 	// create post payload
 	form := url.Values{}

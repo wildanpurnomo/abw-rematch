@@ -1,37 +1,21 @@
 package tests
 
 import (
+	"database/sql/driver"
+	"fmt"
 	"net/http"
-	"net/http/httptest"
-	"regexp"
 	"strings"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/go-playground/assert/v2"
-	"github.com/jinzhu/gorm"
+	"github.com/wildanpurnomo/abw-rematch/libs"
 	"github.com/wildanpurnomo/abw-rematch/models"
-	"github.com/wildanpurnomo/abw-rematch/repositories"
+	"golang.org/x/crypto/bcrypt"
 	"gopkg.in/h2non/gock.v1"
 )
 
 func TestRegister_ValidCase(t *testing.T) {
-	// Init gin
-	r := InitGQLServerTesting()
-
-	// init sqlmock
-	sqlMockDb, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("error init sqlmock: %v", err)
-	}
-	defer sqlMockDb.Close()
-
-	gormDb, err := gorm.Open("postgres", sqlMockDb)
-	if err != nil {
-		t.Fatalf("error init gormDb: %v", err)
-	}
-	defer gormDb.Close()
-
 	// init gock to mock randomUserApi call
 	defer gock.Off()
 	mockResults := []models.RandomUser{
@@ -45,74 +29,224 @@ func TestRegister_ValidCase(t *testing.T) {
 	gock.New("https://randomuser.me/api").Get("/").Reply(200).JSON(mockRandomUserAPIResponse)
 
 	// mock insert SQL
-	const sqlInsert = `INSERT INTO "users" ("username","password","profile_picture","points","unique_code","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING "users"."id"`
-	mock.ExpectBegin()
-	mock.ExpectQuery(regexp.QuoteMeta(sqlInsert)).
-		WithArgs(
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
-			sqlmock.AnyArg(),
-		).
-		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
-	mock.ExpectCommit()
-
-	// assign mock sql db to repository
-	repositories.InitRepository(gormDb)
+	mockSqlDb, mockGormDb, err := StubSQLQuery(
+		MockSQLQuery{
+			Query: `INSERT INTO "users" ("username","password","profile_picture","points","unique_code","created_at","updated_at","deleted_at") VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING "users"."id"`,
+			Args: []driver.Value{
+				sqlmock.AnyArg(),
+				sqlmock.AnyArg(),
+				sqlmock.AnyArg(),
+				sqlmock.AnyArg(),
+				sqlmock.AnyArg(),
+				sqlmock.AnyArg(),
+				sqlmock.AnyArg(),
+				sqlmock.AnyArg(),
+			},
+			Returning: []*sqlmock.Rows{
+				sqlmock.NewRows([]string{"id"}).AddRow(1),
+			},
+		},
+	)
+	if err != nil {
+		t.Fatalf("error mock sql: %v", err)
+	}
+	defer mockSqlDb.Close()
+	defer mockGormDb.Close()
 
 	// begin test
-	req := httptest.NewRequest(
-		http.MethodPost,
+	testResponse := BeginGraphQLServerTesting(
 		`/api/gql?query=mutation+_{register(username:"test%20username",password:"testPasssword123"){username,profile_picture,points}}`,
-		nil,
+		http.Cookie{},
 	)
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
 
-	// verify http status
-	assert.Equal(t, http.StatusOK, w.Code)
-
-	// verify response body
-	jsonString := w.Body.String()
+	// verify response
+	jsonString := testResponse.Body.String()
+	assert.Equal(t, http.StatusOK, testResponse.Code)
 	assert.Equal(t, true, strings.Contains(jsonString, `"username": "test username"`))
 	assert.Equal(t, true, strings.Contains(jsonString, `"profile_picture": "Testing"`))
 	assert.Equal(t, true, strings.Contains(jsonString, `"points": 0`))
 }
 
 func TestRegister_InvalidPassword(t *testing.T) {
-	r := InitGQLServerTesting()
-
-	req := httptest.NewRequest(
-		http.MethodPost,
+	// begin test
+	testResponse := BeginGraphQLServerTesting(
 		`/api/gql?query=mutation+_{register(username:"test%20username",password:"test"){username,profile_picture,points}}`,
-		nil,
+		http.Cookie{},
 	)
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
 
-	jsonString := w.Body.String()
-	assert.Equal(t, http.StatusOK, w.Code)
+	jsonString := testResponse.Body.String()
+	assert.Equal(t, http.StatusOK, testResponse.Code)
+	assert.Equal(t, true, strings.Contains(jsonString, `"register": null`))
 	assert.Equal(t, true, strings.Contains(jsonString, `"errors":`))
 	assert.Equal(t, true, strings.Contains(jsonString, `"message": "Invalid username or password"`))
 }
 
 func TestRegister_InvalidUsername(t *testing.T) {
-	r := InitGQLServerTesting()
-
-	req := httptest.NewRequest(
-		http.MethodPost,
+	testResponse := BeginGraphQLServerTesting(
 		`/api/gql?query=mutation+_{register(username:"test",password:"testPasssword123"){username,profile_picture,points}}`,
-		nil,
+		http.Cookie{},
 	)
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
 
-	jsonString := w.Body.String()
-	assert.Equal(t, http.StatusOK, w.Code)
+	jsonString := testResponse.Body.String()
+	assert.Equal(t, http.StatusOK, testResponse.Code)
+	assert.Equal(t, true, strings.Contains(jsonString, `"register": null`))
 	assert.Equal(t, true, strings.Contains(jsonString, `"errors":`))
 	assert.Equal(t, true, strings.Contains(jsonString, `"message": "Invalid username or password"`))
+}
+
+func TestLogin_InvalidUsername(t *testing.T) {
+	// stub sql
+	mockSqlDb, mockGormDb, err := StubSQLQuery(
+		MockSQLQuery{
+			Query: `SELECT * FROM "users"  WHERE "users"."deleted_at" IS NULL AND ((username = $1)) ORDER BY "users"."id" ASC LIMIT 1`,
+			Args:  []driver.Value{sqlmock.AnyArg()},
+			Returning: []*sqlmock.Rows{
+				sqlmock.
+					NewRows([]string{"username"}).
+					AddRow("xqcL"),
+			},
+		},
+	)
+	if err != nil {
+		t.Fatalf("error init sqlmock: %v", err)
+	}
+	defer mockSqlDb.Close()
+	defer mockGormDb.Close()
+
+	// begin test
+	testResponse := BeginGraphQLServerTesting(
+		`/api/gql?query=mutation+_{login(username:"test%20username",password:"testPasssword123"){username,profile_picture,points}}`,
+		http.Cookie{},
+	)
+
+	// verify response
+	jsonString := testResponse.Body.String()
+	assert.Equal(t, http.StatusOK, testResponse.Code)
+	assert.Equal(t, true, strings.Contains(jsonString, `"login": null`))
+	assert.Equal(t, true, strings.Contains(jsonString, `"errors":`))
+	assert.Equal(t, true, strings.Contains(jsonString, `"message": "Invalid username or password"`))
+}
+
+func TestLogin_InvalidPassword(t *testing.T) {
+	// stub sql
+	hash, _ := bcrypt.GenerateFromPassword([]byte("xqcL"), bcrypt.MinCost)
+	mockSqlDb, mockGormDb, err := StubSQLQuery(
+		MockSQLQuery{
+			Query: `SELECT * FROM "users"  WHERE "users"."deleted_at" IS NULL AND ((username = $1)) ORDER BY "users"."id" ASC LIMIT 1`,
+			Args:  []driver.Value{sqlmock.AnyArg()},
+			Returning: []*sqlmock.Rows{
+				sqlmock.
+					NewRows([]string{"username", "password"}).
+					AddRow("xqcL", hash),
+			},
+		},
+	)
+	if err != nil {
+		t.Fatalf("error init sqlmock: %v", err)
+	}
+	defer mockSqlDb.Close()
+	defer mockGormDb.Close()
+
+	// begin test
+	testResponse := BeginGraphQLServerTesting(
+		`/api/gql?query=mutation+_{login(username:"xqcL",password:"monkaW"){username,profile_picture,points}}`,
+		http.Cookie{},
+	)
+
+	// verify response
+	jsonString := testResponse.Body.String()
+	assert.Equal(t, http.StatusOK, testResponse.Code)
+	assert.Equal(t, true, strings.Contains(jsonString, `"login": null`))
+	assert.Equal(t, true, strings.Contains(jsonString, `"errors":`))
+	assert.Equal(t, true, strings.Contains(jsonString, `"message": "Invalid username or password"`))
+}
+
+func TestLogin_ValidCase(t *testing.T) {
+	// stub sql
+	hash, _ := bcrypt.GenerateFromPassword([]byte("monkaW"), bcrypt.MinCost)
+	mockSqlDb, mockGormDb, err := StubSQLQuery(
+		MockSQLQuery{
+			Query: `SELECT * FROM "users"  WHERE "users"."deleted_at" IS NULL AND ((username = $1)) ORDER BY "users"."id" ASC LIMIT 1`,
+			Args:  []driver.Value{sqlmock.AnyArg()},
+			Returning: []*sqlmock.Rows{
+				sqlmock.
+					NewRows([]string{"username", "password", "profile_picture", "points"}).
+					AddRow("xqcL", hash, "ayayaclap", 0),
+			},
+		},
+	)
+	if err != nil {
+		t.Fatalf("error init sqlmock: %v", err)
+	}
+	defer mockSqlDb.Close()
+	defer mockGormDb.Close()
+
+	// begin test
+	testResponse := BeginGraphQLServerTesting(
+		`/api/gql?query=mutation+_{login(username:"xqcL",password:"monkaW"){username,profile_picture,points}}`,
+		http.Cookie{},
+	)
+
+	// verify response
+	jsonString := testResponse.Body.String()
+	assert.Equal(t, http.StatusOK, testResponse.Code)
+	assert.Equal(t, true, strings.Contains(jsonString, `"username": "xqcL"`))
+	assert.Equal(t, true, strings.Contains(jsonString, `"profile_picture": "ayayaclap"`))
+	assert.Equal(t, true, strings.Contains(jsonString, `"points": 0`))
+}
+
+func TestAuthenticate_InvalidCase(t *testing.T) {
+	// begin test
+	testResponse := BeginGraphQLServerTesting(
+		`/api/gql?query=query+_{authenticate{username,profile_picture,points}}`,
+		http.Cookie{},
+	)
+
+	// verify response
+	jsonString := testResponse.Body.String()
+	assert.Equal(t, http.StatusOK, testResponse.Code)
+	assert.Equal(t, true, strings.Contains(jsonString, `"authenticate": null`))
+	assert.Equal(t, true, strings.Contains(jsonString, `"errors":`))
+	assert.Equal(t, true, strings.Contains(jsonString, `"message": "Invalid token or user not found"`))
+}
+
+func TestAuthenticate_ValidCase(t *testing.T) {
+	const userId = 1
+
+	// stub sql
+	mockSqlDb, mockGormDb, err := StubSQLQuery(
+		MockSQLQuery{
+			Query: `SELECT * FROM "users" WHERE "users"."deleted_at" IS NULL AND ((id = $1)) ORDER BY "users"."id" ASC LIMIT 1`,
+			Args:  []driver.Value{fmt.Sprint(userId)},
+			Returning: []*sqlmock.Rows{
+				sqlmock.
+					NewRows([]string{"username", "profile_picture", "points"}).
+					AddRow("xqcL", "pogU", 0),
+			},
+		},
+	)
+	if err != nil {
+		t.Fatalf("error init sqlmock: %v", err)
+	}
+	defer mockSqlDb.Close()
+	defer mockGormDb.Close()
+
+	// Inject token
+	token, _ := libs.GenerateToken(userId)
+
+	// begin test
+	testResponse := BeginGraphQLServerTesting(
+		`/api/gql?query=query+_{authenticate{username,profile_picture,points}}`,
+		http.Cookie{
+			Name:  "jwt",
+			Value: token,
+		},
+	)
+
+	// verify response
+	jsonString := testResponse.Body.String()
+	assert.Equal(t, http.StatusOK, testResponse.Code)
+	assert.Equal(t, true, strings.Contains(jsonString, `"username": "xqcL"`))
+	assert.Equal(t, true, strings.Contains(jsonString, `"profile_picture": "pogU"`))
+	assert.Equal(t, true, strings.Contains(jsonString, `"points": 0`))
 }
